@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Tom Bosc" />
+  <meta name="dcterms.date" content="2021-12-01" />
+  <meta name="description" content="A very short overview of construction grammar based on ‘Construction Grammar: A Thumbnail Sketch’ by Fried and Östman, 2004." />
+  <title>Notes about construction grammar</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    div.csl-bib-body { }
+    div.csl-entry {
+      clear: both;
+    }
+    .hanging div.csl-entry {
+      margin-left:2em;
+      text-indent:-2em;
+    }
+    div.csl-left-margin {
+      min-width:2em;
+      float:left;
+    }
+    div.csl-right-inline {
+      margin-left:2em;
+      padding-left:1em;
+    }
+    div.csl-indent {
+      margin-left: 2em;
+    }
+  </style>
+  <link rel="stylesheet" href="mine.css" />
+  <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"
+  type="text/javascript"></script>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Notes about construction grammar</h1>
+<p class="author">Tom Bosc</p>
+<p class="date">2021-12-01</p>
+</header>
+<hr />
+<p>Bottom-up approaches to semantics like Montague semantics or
+recursive neural networks are usually considered fully compositional, in
+the sense that the meaning of a phrase, a clause or a sentence is
+mechanically computed from the meaning of individual words. But there
+are frequent and apparently non-compositional phenomena that throw off
+these semantic theories. And as a consequence of leaving aside
+semantics, one can also argue that top-down syntax either undergenerates
+or overgenerates.</p>
+<p>Construction grammar is a radically different view of grammar. It can
+use a variety of features, not only syntactic, but also phonetic,
+discourse-related, semantic, pragmatic. It is conceptually simple, based
+on a single operation (unification), yet the underlying
+unification-based grammar formalism is more expressive than context-free
+grammars. Construction grammar is part of cognitive linguistics and as
+such, it tries to account for language acquisition and the use of
+mechanisms not specific to language, such as categorization.
+Construction grammarians also consider all data as equal, unlike
+generativists which distinguish between the core and the periphery in a
+rather ad hoc fashion. For all these reasons, construction grammar
+should appeal to cognitive scientists and AI researchers.</p>
+<p>The first section motivates construction grammar for an audience
+mainly interested in the issue of compositional semantics, but it can be
+safely skipped. The second and main section is meant to be a partial
+summary of <span class="citation"
+data-cites="fried_construction_2004-1">Fried and Östman (2004b)</span>’s
+excellent introduction to Construction Grammar. All the pictures are
+taken from the article. I recommend the entire book from which it is
+taken <span class="citation" data-cites="fried_construction_2004">(Fried
+and Östman 2004a)</span>. I found some explanations lacking in the
+article, in particular as to how unification works on the valence
+attributes, so there is a significant amount of guesswork here. Feedback
+is welcome!</p>
+<h2 id="motivation">Motivation</h2>
+<h3 id="compositional-bottom-up-approaches">Compositional bottom-up
+approaches</h3>
+<p>Constructionist approaches to grammar assume that there are
+associations between meaning and expressions (substrings) of any size
+(word, phrase, clause, sentence). Such pairings are called
+<em>constructions</em>. This can be contrasted with projectionist
+approaches that assume that only words have arbitrary semantic
+representations, and that the representations of larger constituents are
+derived using bottom-up rules.</p>
+<p>Let us briefly sketch how these bottom-up approaches work. Bottom-up
+approaches are guided by constituency trees. They include both formal,
+set-theoretic approaches like Montague semantics or connectionist
+approaches based on recursive neural networks. In such approaches, words
+have arbitrary meaning, but the meaning of constituents higher up in the
+constituency tree are <em>completely</em> determined by a bottom-up
+computation. Consider for example the sentence “John loves Mary”, which
+has the following tree structure:</p>
+<pre><code>        S            
+    /       \        
+  John      VP       
+           /  \      
+        loves Mary   </code></pre>
+<p>In Montague semantics, “loves” is associated with a meaning <span
+class="math inline">\(m_{\mathrm{loves}}\)</span> that is a function,
+and “Mary” is associated with a particular individual (an element in a
+set) <span class="math inline">\(m_{\mathrm{Mary}}\)</span>. To obtain
+the meaning of the VP, we use function application, i.e. <span
+class="math inline">\(m_{\mathrm{VP}} = m_{\mathrm{loves}}
+(m_{\mathrm{Mary}})\)</span>. This resulting meaning <span
+class="math inline">\(m_{\mathrm{VP}}\)</span> is another function,
+which takes an individual and returns a value that is either true or
+false, depending on our mathematical description of the state of
+affairs. In sum, the meaning of a parent is the application of the
+meaning of one of the two children on the meaning of the other children.
+For an introduction, you can read <a href="intro_semantics.html">my
+notes on formal semantics</a> until §“Content as intension” or <span
+class="citation" data-cites="winter_elements_2016">Winter
+(2016)</span>’s textbook on which they’re based.</p>
+<p>In the bottom-up, connectionist semantics approach, such as <span
+class="citation" data-cites="pollack_recursive_1990">Pollack
+(1990)</span>’s recursive distributed representation, each word <span
+class="math inline">\(w\)</span> is associated with a vector <span
+class="math inline">\(v_w \in \mathbb{R}^d\)</span>, and there is a
+composition function <span class="math inline">\(f: \mathbb{R}^d ×
+\mathbb{R}^d \to \mathbb{R}^d\)</span> that maps pairs of vectors of
+siblings to a new vector representing the parent constituent. In our
+example, the meaning of the constituent VP is <span
+class="math inline">\(v_{VP} = f (v_{\mathrm{loves}},
+v_{\mathrm{Mary}})\)</span>.</p>
+<p>Note that such approaches have not been abandonned. Formal approaches
+have fallen out of favor for various good reasons, but connectionist
+approaches have not. No, massive pretrained Transformers <span
+class="citation" data-cites="vaswani_attention_2017">(Vaswani et al.
+2017)</span> used as encoders are not guided by syntactic trees. But
+there is still quite a lot of efforts towards unsupervised tree
+induction, i.e. learning to infer trees as hidden variables while
+optimizing for a particular objective (for example, see <span
+class="citation" data-cites="maillard_jointly_2019">Maillard, Clark, and
+Yogatama (2019)</span>’s work). </p>
+<h3 id="examples-of-constructions-in-english">Examples of constructions
+in English</h3>
+<p>As different as these approaches are, they have an important common
+trait: they operate bottom-up. But it is frequent that we cannot trace
+some aspect of meaning of the sentence back to an individual
+constituent. This casts doubt on the bottom-up approach. To illustrate,
+let us look at the following usages of the verb “slice” from <span
+class="citation" data-cites="goldberg_constructions_2006">Goldberg
+(2006)</span>:</p>
+<blockquote>
+<p>He sliced the bread. (transitive)</p>
+<p>Pat sliced the carrots into the salad. (caused motion)</p>
+<p>Pat sliced Chris a piece of pie. (ditransitive)</p>
+<p>Emeril sliced and diced his way to stardom. (way construction)</p>
+<p>Pat sliced the box open. (resultative)</p>
+</blockquote>
+<p>First off, we see that “sliced” takes a variable number of arguments
+(2 in the transitive, 3 in the ditransitive). Moreover, the object
+closest to the verb in the ditransitive is not the same as the object of
+the transitive (Chris is not sliced!). Naively, it seems that “sliced”
+requires different lexical representations to handle these different
+contexts.</p>
+<p>There are similarities of meaning between sentences which have
+different verbs, arguments and adjuncts but which share parts of their
+syntactic structure. For example, the two following sentences both have
+a “caused motion” interpretation <span class="citation"
+data-cites="goldberg_constructions_1995">(Goldberg 1995, chap.
+17)</span>:</p>
+<blockquote>
+<p>Pat sliced the carrots into the salad.</p>
+<p>Fred stuffed the papers in the envelope.</p>
+</blockquote>
+<p>The carrots and the papers <em>move</em> to the salad or the envelope
+as a (<em>causal</em>) consequence of the action of Pat and Fred. There
+are countless other similar examples with a similar interpretation, so
+loosely speaking, there seems to be a grammatical “pattern”.</p>
+<p>Crucially, the “caused motion” interpretation is peculiar and
+unpredictable given the constituents of the sentence. It is not
+contributed by the verb because you can slice bread without the slices
+moving, as in the transitive use. It could come from the prepositional
+phrase, but if the “into” of the first sentence is clearly directional,
+“in” in the second is usually locative and can take different meanings.
+So even admitting that here, “in” is directional, we still need to
+explain why it is so. Thus we can rule out this explanation as well.
+<span class="citation" data-cites="goldberg_constructions_1995">Goldberg
+(1995, chap. 17)</span> argues against other alternative explanations
+which state that the “caused motion” meaning is contributed by <em>at
+least</em> the verb or the preposition, but not always both.</p>
+<p>Goldberg concludes that the grammatical pattern itself – a particular
+<em>construction</em> – contributes this meaning. We can make similar
+analyses for the other “sliced” sentences, and introduce other
+constructions which explain the particular interpretations of these
+sentences, interpretations that cannot be explained by the meaning of
+their constituents in isolation. If these sentences do not strike us as
+very idiomatic, it is probably because only a small “aspect” of meaning
+is contributed by the corresponding constructions.</p>
+<p>But it is important to note that these constructions occur very
+frequently and are very productive, and therefore, we cannot simply
+treat them as exceptions. This will not happen in construction grammar,
+where constructions are first-class citizens. Construction grammar does
+not have the core/periphery distinction of generative linguistics, a
+distinction that looks (at least from outside) like a convenient fiction
+to ignore data.</p>
+<p>I believe that in terms of expressivity, bottom-up theories of
+semantics <em>can</em> deal with such phenomena compositionally. That
+is, we can probably augment the representation of words (functions,
+vectors) so that they encode several possible argument structures at
+once. I think this is a consequence of extremely expressive
+representations and powerful composition operators (lambda-calculus is
+Turing complete and so are recurrent neural networks under some
+hypotheses). You can find more thoughts on that in <a
+href="#reconcile">the appendix</a>. In that sense, I think that the
+argument given above is <em>very</em> limited. However, expressivity is
+not enough. In particular, we need a theory that accounts for language
+acquisition, and which explains how linguistic skills fits alongside
+with other cognitive skills. Although we won’t go into details here,
+construction grammar is part of cognitive linguistics and tries to
+answer these related questions at once.</p>
+<h3 id="from-semantics-to-syntax">From semantics to syntax</h3>
+<p>We’ve seen that constructions contribute meaning to an expression,
+which seems to be hard to handle bottom-up. This also threatens
+top-down, autonomous syntax <span class="citation"
+data-cites="chomsky_syntactic_1957">(Chomsky 1957, sec. 8)</span> as
+well. <span class="citation"
+data-cites="goldberg_constructions_2006">Goldberg (2006, chap. 2)</span>
+argues against a derivational approach that would consider one
+construction as being syntactically derived from another. In the
+derivational view, from the syntactic structure of “Mina bought a book
+for Mel” we can derive the ditransitive form “Mina bought Mel a book”,
+<em>independently</em> of semantics. Goldberg shows that derivations
+both undergenerate (there are ditransitive which do not have a dative
+corresponding form) and overgenerate (vice versa). The root cause seems
+to be that constructions have different semantic constraints.</p>
+<p>To deal with this, construction proponents generally claim that some
+semantics and pragmatics features should be in the grammar. It is not
+clear to me what should be considered part of grammar, as I can’t really
+tell apart some grammatical, nonsensical sentences from other
+ungrammatical sentences (in a principled, objective manner). But in my
+opinion, the elegance of construction grammar is more convincing than
+these arguments, so let’s leave aside theory and discuss construction
+grammar.</p>
+<h2 id="construction-grammar">Construction grammar</h2>
+<p><a name="construction_grammar"></p>
+<h3 id="attribute-value-matrices">Attribute-Value Matrices</h3>
+<p>In construction grammar (<em>CxG</em>), the grammar of a language is
+described as a set of <em>constructions</em>. Constructions themselves
+are formalised as <em>attribute-value matrices</em> (<em>AVMs</em>),
+also called <em>feature structures</em>. For programmers, it corresponds
+to the <a
+href="https://en.wikipedia.org/wiki/Associative_array">map/dictionary</a>
+abstract data type, that is, it is a set of pairs of attributes and
+values.</p>
+<p>The simplest kind of construction is the <em>lexical
+construction</em>. Every word is associated with a lexical construction.
+Here is a representation of the word “book”, taken from <span
+class="citation" data-cites="fried_construction_2004-1">Fried and Östman
+(2004b)</span>:</p>
+<center>
+<img src="constructions_img/book_construction.png" width="60%"
+         alt="Box representation of the construction of the word 'book'">
+</center>
+<p>The value associated to an attribute can be:</p>
+<ul>
+<li>Binary: here, the attribute <code>lex</code> is assigned the value
+<code>+</code>, indicating that the construction describes a single
+word, while <code>lex -</code> would be the value taken by a multi-word
+phrase.</li>
+<li>Categorical: the syntactic category attribute <code>cat</code> can
+take the value <code>n</code> (nouns), <code>v</code> (verbs), etc.</li>
+<li>An AVM: As illustrated here, nesting AVMs is useful to organize
+features into groups (<code>syn</code>, <code>sem</code>, but also
+phonological, etc.) and make reading easier. But as we will see later,
+it is also used to represent the hierarchical structure of
+constituents.</li>
+<li>An empty AVM: Represented as <code>[]</code>, it is called
+<em>variable</em> (not illustrated here).</li>
+<li>A frame: A frame (<span class="smallcaps">book</span>, here) is a
+structured representation of meaning, containing some entities with
+properties and that are related in some ways. I do not know the details
+of frame semantics and they are not necessary to understand this
+article.</li>
+<li>Values can be omitted for the sake of conciseness, which is
+indicated by <code>[...]</code> (not illustrated here).</li>
+</ul>
+<p>Alternatively, we can specify a lexical construction using a
+different notation <span class="citation"
+data-cites="shieber_introduction_2003">(Shieber 2003)</span>:</p>
+<pre><code>&lt;lxm&gt; = &quot;book&quot;
+&lt;syn head cat&gt; = n
+&lt;syn head proper&gt; = -
+&lt;syn level max&gt; = -
+&lt;syn level lex&gt; = +
+&lt;sem ...&gt; = ...</code></pre>
+<p>and we call <code>&lt;...&gt;</code> <em>paths</em>.</p>
+<p>Within a language, any set of attributes can be used. For instance,
+it makes sense to use a <code>case</code> attribute only for languages
+which have a case system (like Latin, but not English). Moreover, a
+given attribute is never required to be specified in every construction.
+For example, in English, many constructions do not specify any phonetic
+constraint, but some do.</p>
+<h3 id="unification">Unification</h3>
+<p>How are these lexical constructions combined to form phrases and
+sentences? In particular, let’s see how we can form simple noun phrases.
+The English grammar allows noun phrases such as “the book”, “the snow”,
+“much snow”, but forbids the ungrammatical “much book”. This is an
+example of what is called an agreement relation between the determiner
+and the noun.</p>
+<p>In construction grammar, the entire grammar is contained in the set
+of constructions. To form a phrase, <em>phrase-structure</em>
+constructions are used. They specify i) what combinations are allowed
+and ii) what features the result of the combination possess. As we will
+see, these phrase-structure constructions differ from lexical
+constructions, in that their AVM representations require special
+features.</p>
+<p>Constructions are combined through a single binary operation called
+<em>unification</em>. Intuitively, this operation can be seen as a
+<em>recursive</em> union, fusion or merge of the AVMs. Crucially, this
+operation fails when two attributes exist in AVMs but differ in values.
+Unification verifies that the atomic attributes (binary, categorical)
+match if they exist in the two AVMs to unify; else the missing
+attributes are added from the other AVM. The unification procedure is
+called recursively on AVM values. Here is an example:</p>
+<table style="width: 100%">
+<tr>
+<th>
+<code>a</code>
+</th>
+<th>
+<code>b</code>
+</th>
+<th>
+Unification of <code>a</code> and <code>b</code>
+</th>
+</tr>
+<tr>
+<td>
+<center>
+<pre><code>&lt;x 3&gt;
+&lt;y 4&gt;
+&lt;z i 2&gt;
+&lt;z j +&gt;
+</code></pre>
+</td>
+<center>
+<td>
+<center>
+<pre><code>&lt;x 3&gt;
+&lt;z i 2&gt;
+&lt;z j +&gt;
+&lt;z k -&gt;</code></pre>
+</td>
+<center>
+<td>
+<center>
+<pre><code>&lt;x 3&gt;
+&lt;y 4&gt;
+&lt;z i 2&gt;
+&lt;z j +&gt;
+&lt;z k -&gt;</code></pre>
+</td>
+<center>
+</tr>
+<table>
+<p>Change the first line of the description of <code>a</code> or
+<code>b</code> by <code>&lt;x 2&gt;</code> and unification fails.</p>
+<p>Let us try to model agreement between the determiner and the noun via
+unification. We partially specify the lexical constructions of “the”,
+“book”, “snow”, and “much”, focusing on the semantic features relevant
+for agreement: the configuration <code>cnfg</code> (whether it is a mass
+noun or a count noun) and the number <code>num</code> (singular or
+plural). We obtain something like:</p>
+<ul>
+<li>“much”:
+<code>&lt;sem cnfg&gt; = mass, &lt;sem num&gt; = sg, ...</code>,</li>
+<li>“the”:
+<code>&lt;sem cnfg&gt; = [], &lt;sem num&gt; = [], ...</code>,</li>
+<li>“snow”:
+<code>&lt;sem cnfg&gt; = mass, &lt;sem num&gt; = sg, ...</code>,</li>
+<li>“book”:
+<code>&lt;sem cnfg&gt; = count, &lt;sem num&gt; = sg, ...</code>,</li>
+</ul>
+<p>In order to impose constraints on possible combinations of
+determiners and nouns, we want to create a phrase-structure construction
+that we would call the <em>determination</em> construction. If
+<em>d1</em> and <em>d2</em> are constructions corresponding to the words
+to combine, we would require that
+<code>&lt;d1 sem cnfg&gt; = &lt;d2 sem cnfg&gt;</code> (and similarly
+for the number attribute <code>num</code>). This is implemented using
+unification. We would like to state that the noun phrase is grammatical
+if and only if unification of <em>d1</em> with <em>d2</em> succeeds. If
+it succeeds, the words can combine and the resulting unified AVM can be
+used to determine how the noun phrase behave. In our example, the AVMs
+of “much” and “snow” can unify, since they are both labeled as
+<code>cnfg mass</code>. “The” combines with both “snow” and “book”
+because its <code>cnfg</code> feature is a variable: it is left
+unspecified and can unify with any value. However, this is not the case
+for “much” and “book”, which have incompatible <code>cnfg</code>
+feature.</p>
+<p>The <em>determination</em> construction uses unification as outlined
+to ensure the agreement between its two children constituents. The
+agreement and other matching constraints make up the <em>internal</em>
+properties of the construction. In the determination construction of
+<span class="citation" data-cites="fried_construction_2004-1">Fried and
+Östman (2004b)</span>, these internal properties are represented in the
+bottom boxes:</p>
+<center>
+<img src="constructions_img/determination_construction.png" width="66%"
+     alt="Box representation of the determination construction.">
+</center>
+<p>The internal properties are not associated with any attribute (they
+just float in the outermost box). So we see that this type of
+construction is not represented by a simple AVM like lexical
+constructions. Formally, this can be seen as an AVM with two special
+features <span class="citation"
+data-cites="kay_functional_1984 shieber_introduction_2003">(M. Kay 1984;
+Shieber 2003, p33)</span>:</p>
+<ul>
+<li>a <em>constituent set</em>, a set containing the daughters of the
+phrase,</li>
+<li>a <em>pattern</em>, a list specifying the order of realization of
+the daughter of the phrase (the <em>actual</em> order in which they are
+said).</li>
+</ul>
+<p>For now, let us think of these boxes as defining the pattern, and the
+constituent set is just the set of elements in the pattern. One lexical
+construction can unify with the sibling on the left, and another with
+the one on the right.</p>
+<p>Let’s examine the internal properties of the construction in more
+details. The <code>#i</code> syntax indicates <em>coindexation</em>,
+i.e. boxes prefixed with the same index <span
+class="math inline">\(i\)</span> denote identical AVMs. In programming
+terms, two AVMs that are coindexed share a single location in memory. In
+this construction, coindexes represent the constraints that the semantic
+attributes <code>cnfg</code>, <code>num</code> and <code>bounded</code>
+must coincide in the two constituents. Besides these agreement
+constraints, we also see that one of the constituent is a determiner and
+the other is the head, and there are various syntactic constraints on
+the head. For instance, it cannot be a proper noun as we usually don’t
+say “the New York City”. Actually, in some cases this is possible, and
+this can be specified elegantly in the grammar <span class="citation"
+data-cites="fried_construction_2004-1">(Fried and Östman
+2004b)</span>.</p>
+<p>By the way, coindexation is the reason for another representation of
+AVMs as directed acyclic graphs, where AVMs are nodes and attributes are
+edges. In this graphical representation, AVMs which share an index are a
+single node with several ingoing edges. This representation is important
+because it is used to implement unification <span class="citation"
+data-cites="jurafsky_speech_2009">(Jurafsky and Martin 2009, sec.
+15.4)</span>, but we don’t need to discuss it further here.</p>
+<p>If the constituent set contains the internal properties of the
+construction, what are the <em>external</em> properties of the
+construction? They are the features that are necessary to embed this
+construction, i.e. unify it with a larger phrase-structure construction
+as a constituent. Many internal features will be irrelevant to specify
+whether or not unification is possible. External features, on the other
+hand, should contain all the information about the phrase as a whole to
+specify with what it can combine, as a constituent of a larger whole.
+Some internal properties are resurfaced and passed upwards. Typically,
+the properties of the head are the most important – in particular, this
+is coherent with the traditional definition of the head word of a
+constituent as the word that defines the syntactic category of the
+constituent. Here, the <code>cnfg</code> and <code>num</code> values are
+the same as in the daughter constituents. Perhaps some verb’s (lexical)
+construction specifies that its object can only be a NP with a mass noun
+head, so these external properties might be useful. Moreover, we see
+that the <code>bounded</code> attribute is set to <code>+</code>
+regardless of whether the constituents are bounded or not. So not all
+external properties are simply internal properties passed upwards; some
+external properties are fixed.</p>
+<details>
+<summary>
+Details on boundedness and the frame attribute.
+</summary>
+<p>According to <a
+href="https://en.wikipedia.org/wiki/Boundedness_(linguistics)#Boundedness_in_nouns">Wikipedia
+on boundedness</a>, here is how to think about the <code>bounded</code>
+attribute. If we remove 90% of the quantity of snow somewhere, we can
+still say the rest is “snow” and hence, snow is <code>bounded -</code>.
+But if we remove 90% of a quantity of “much snow”, it can be too little
+snow to be called “much snow” anymore. In that sense, the determination
+construction only characterize bounded referents.</p>
+<p>The <code>frame</code> attribute is treated very abstractly by <span
+class="citation" data-cites="fried_construction_2004-1">Fried and Östman
+(2004b)</span>, so I ignored it along with the special syntax
+<code>↓</code> and <code>↑</code>. They say:</p>
+<blockquote>
+<p>the semantic characterization of the construction must include
+information about integrating the frames of its constituents. To our
+knowledge, the representation of this relationship has not been worked
+out in any detail yet.</p>
+</blockquote>
+</details>
+<p>Phrase-structure constructions can also be represented as i) a
+context-free rule and ii) equations <span class="citation"
+data-cites="shieber_introduction_2003">(Shieber 2003)</span>. The
+equations either encode constraints on the daughter constituents
+(internal features) or specify external features. Here is the
+<em>determination</em> construction in this notation, where the
+syntactic features are omitted for conciseness:</p>
+<pre><code>X0 → X1 X2  # context-free rule
+    # internal features (constraints on RHS)
+    &lt;X1 role&gt; = det
+    &lt;X2 role&gt; = head
+    # internal features: matching constraints
+    &lt;X2 sem cnfg&gt; = &lt;X1 sem cnfg&gt;  
+    &lt;X2 sem num&gt; = &lt;X1 sem num&gt;
+    &lt;X2 sem bounded&gt; = &lt;X1 sem bounded&gt;
+    # external features (of LHS)
+    &lt;X0 sem cnfg&gt; = &lt;X1 sem cnfg&gt;
+    &lt;X0 sem num&gt; = &lt;X1 sem num&gt;
+    &lt;X0 sem bounded&gt; = &lt;X1 sem bounded&gt;
+    # end external features</code></pre>
+<p>In this case, the special feature specifying word order,
+<code>pattern</code>, is a list where <code>X1</code> is the first
+element and <code>X2</code> the second.</p>
+<h3 id="linking-constructions">Linking constructions</h3>
+<p>We now come to the question of representation of verbs and linking. I
+think this is the really interesting and elegant part. A major question
+is how to account for <em>alternations</em>, that is, the fact that a
+single verb occurs in different syntactic context. This was the question
+that worried us in the motivation section. Consider the following
+alternations <span class="citation"
+data-cites="kay_grammatical_1999">(P. Kay and Fillmore 1999)</span>:</p>
+<blockquote>
+<ol type="a">
+<li>Sidney gave some candy to Marion. (transitive, caused motion)</li>
+<li>Sidney gave Marion some candy. (transitive, ditransitive)</li>
+<li>Marion was given some candy (by Sidney). (passive,
+ditransitive)</li>
+<li>Some candy was given to Marion (by Sidney). (passive, caused
+motion)</li>
+</ol>
+</blockquote>
+<p>First of all, do we have to have four different lexical constructions
+to license these sentences? No, thanks to a mechanism called
+<em>inheritance</em>. We specify a general construction with which many,
+more specific AVMs will be unified. Here, we can have a single
+construction for “give” which doesn’t specify a <code>lexeme</code>
+(let’s call it the main construction), and then all the variants
+(“give”, “gives”, “given”, “gave”, etc.) inherit from the main
+construction while specifying a few additional attributes like
+<code>lexeme</code>, <code>person</code>, <code>number</code>,
+<code>mood</code>. Then, these more specific variants of constructions
+can unify with <em>two</em> constructions: either the transitive or the
+passive construction, and either the caused motion or the recipient
+constructions.</p>
+<p>Inheritance is pervasive in CxG, because it allows linguists to
+express very general principles that hold in many “places” in the
+grammar without repetition. Most constructions, then, get their content
+by inheritance. This also allows more idiomatic constructions, which
+simply do not inherit certain widespread constructions. In English,
+there is a <em>Subject</em> construction from which all other verbs’
+lexical constructions must inherit. This implements the requirement that
+all English sentences must have a subject.</p>
+<p>Let’s turn to lexical constructions for verbs and look at the
+<em>Subject</em> construction and the <em>carry</em> construction <span
+class="citation" data-cites="fried_construction_2004-1">(Fried and
+Östman 2004b)</span>:</p>
+<center>
+<p><img src="constructions_img/subject_construction.png" width="50%"></p>
+<img src="constructions_img/carry_construction.png" width="50%">
+</center>
+<p>The <em>carry</em> construction introduces a valence
+(<code>val</code>) attribute. It is assigned a set of AVMs which each
+have a <code>rel</code> attribute. The function of <code>val</code> is
+to map some <em>frame elements</em> to <em>θ-roles</em>. This is the
+glue between the semantics and the syntax. <em>Frame elements</em> are
+entities fulfilling a certain role in the relation described by the
+verb. Here, the <span class="smallcaps">carry</span> frame has 4 frame
+elements: Carrier, Load, Destination, Container. Similarly, the <span
+class="smallcaps">buy</span>/<span class="smallcaps">sell</span> frame
+would have 4 frame elements: Buyer, Seller, Goods and Money.
+<em>θ-roles</em> are generalizations of the frame elements. For example,
+both the Buyer of the verb “buy”, the Carrier of the verb “carry” and
+the Builder of the verb “build” are associated with the <em>agent</em>
+θ-role. Indeed, they share many properties: in general, they are
+volitionally involved in the action, aware of it, etc.</p>
+<p>The valence only specifies particular salient frame elements which
+need to be expressed. For instance, in the <em>carry</em> construction
+above, the valence specifies that the Carrier and the Load are
+specified, which explains the common “She carried an oversized backpack”
+while forbidding “I carry”. Other frame elements are optionally
+expressed when the verb’s construction unifies with another construction
+that contributes valence. An example is given in the next
+subsection.</p>
+<p>Here we need to take a detour and talk about how unification on sets
+work, in order to explain how verb constructions unify with
+constructions of their arguments. I haven’t figured out how it works
+exactly, so this should be taken with a large grain of salt. Please get
+in touch if you have any remarks. So here is my guess. In set
+unification, all the elements of the smallest set (or equal-sized set)
+try to unify with elements of the other set. If there is only one
+possible pairing, i.e. each element of the smallest set can unify with
+one and only one element of other set, we’re good and nothing special
+happens. But there are two other possibilities:</p>
+<ol type="1">
+<li>An element can unify with <em>several</em> elements from the other
+set. Then, it seems that we need to entertain several parallel options
+until unification with another construction resolves the ambiguity. In
+that sense, unification between 2 sets is not an operator (a function
+that yields a unique set) anymore.</li>
+<li><a name="addition_valence">An element <em>cannot unify with any</em>
+elements from the other set. Then, the element is added to the set (like
+a regular set union).</a></li>
+</ol>
+<p>With this in mind, let’s go back to <em>carry</em> and
+<em>Subject</em>. The <em>Subject</em> construction asserts that one of
+the elements of the valence will play the grammatical function
+(<code>gf</code>) of subject. However, the inheritance of <em>carry</em>
+from <em>Subject</em> does not specify whether the 1st or the 2nd
+element of the valence is the subject (case 1). The ambiguity is
+resolved once <em>carry</em> unify with one of these two
+constructions:</p>
+<center>
+<img src="constructions_img/transitive_construction.png" width="42%" style="vertical-align: top;">
+<img src="constructions_img/passive_construction.png" width="56%">
+</center>
+<ul>
+<li>When <em>carry</em> is unified with <em>Transitive Object</em>, the
+non-distinguished argument (<code>DA -</code>) #2 is assigned the object
+(<code>obj</code>) function. This solves the ambiguity that we had with
+the inheritance from <em>Subject</em>: now, we know that the other
+argument #1, which does not have an attribute <code>gf</code>, must have
+the subject function.</li>
+<li>When <em>carry</em> is unified with <em>Passive</em>, the
+distinguished argument #1 is assigned the oblique function. It is only
+optionally realized, meaning that even if it is present in the
+linguistic analysis, it is invisible or omitted in the actual resulting
+phrase. This is indicated by <code>(fni)</code>. When it is realized, it
+is a prepositional phrase with the preposition “by”. By inheritance from
+<em>Subject</em>, this implies that the argument #1, which does not have
+any function <code>gf</code>, must be the subject.</li>
+</ul>
+<p>By the way, the <code>DA</code> attribute’s sole purpose seems to be
+to identify the argument that can be the subject in the active mood. It
+is a rather simple, but useful abstraction: we can still use the
+<em>Passive</em> construction and the subject is not the
+<code>DA +</code> anymore.</p>
+<h4 id="increasing-the-valence">Increasing the valence</h4>
+<p>I mentioned above that constructions can increase valence. This will
+explain how the ditransitive construction can be applied to verbs like
+“slice” as we have seen in the motivation section. <span
+class="citation" data-cites="fried_construction_2004-1">Fried and Östman
+(2004b)</span> gives the following example of verbs usually considered
+intransitive that are used with a direct object:</p>
+<blockquote>
+<p>She’ll walk you cross the street</p>
+<p>Now we’re talking money!</p>
+</blockquote>
+<p>It seems that to increase the valence of <em>walk</em>, we need to
+have a construction that specifies a valence element which cannot unify
+with any valence element of the <em>walk</em> construction (as I’ve
+hypothesized in <a href="#addition_valence">bullet point 2</a>). For
+example, consider the <em>Affected Object</em> construction:</p>
+<center>
+<img src="constructions_img/affected_object_construction.png" width="60%" style="vertical-align: top;">
+</center>
+<p>It inherits from the <em>Transitive Object</em> construction. It adds
+i) a semantic constraint on the interpretation of the entire sentence
+and ii) specify the θ-role of the sole valence element. Since the single
+element of the two valence sets of <em>Affected Object</em> and
+<em>Transitive Object</em> are compatible, they unify (the semantics,
+omitted here, must match, too). However, since the construction of
+intransitive verbs like “walk” specify that the θ-role of their sole
+argument is not a patient, by <a href="#addition_valence">bullet point
+2</a>, the valence set now contains 2 elements. This additional valence
+element licenses “you” in “She’ll walk you cross the street”.</p>
+<p>Still, I’m not sure what prevents <em>Transitive Object</em> from
+unifying with <em>walk</em> directly. We would probably need two
+additional ingredients. First, an English-specific, grammar-wide rule
+that states that any valence element must specify a θ-role (see details
+in the details box below). Second, we would also probably need θ-roles
+to be mutually exclusive.</p>
+<details>
+<summary>
+One option for mandatory θ-roles
+</summary>
+<p><span class="citation" data-cites="shieber_introduction_2003">Shieber
+(2003)</span> surveys different formalisms that extend the simplest form
+of unification-based grammar. Martin Kay’s Functional Unification
+Grammar has a special value <code>ANY</code>, which behaves like the
+variable <code>[]</code>, except that a construction containing
+<code>ANY</code> values is not “well-formed” and must be unified further
+in order to license a sentence. So if the <em>Transitive Object</em>
+uses <code>θ ANY</code>, it can unify with the <em>walk</em>
+construction but the resulting construction is not well-formed. On the
+other hand, the <em>Affected Object</em> construction can unify with the
+<em>walk</em> construction fine and is well-formed.</p>
+<span class="citation" data-cites="shieber_introduction_2003">Shieber
+(2003)</span> warns us against the use of such devices, which breaks
+declarativeness/non-procedurality of the formalism (see below).
+</details>
+<h3 id="ordering-constructions">Ordering constructions</h3>
+<p>Lexical constructions, including verb constructions, do not have
+internal properties or daughter constituents. Neither do linking
+constructions like <em>Passive</em> or <em>Transitive Object</em>.
+That’s why they need to be unified with larger constructions such as the
+<em>Verb Phrase</em> construction.</p>
+<p>We don’t need to go into details here, as we’ve seen all the
+important mechanisms of CxG. This construction has a verb constituent
+which appears first, followed by a variable number of arguments. These
+arguments are co-indexed with the valence specified by the verb’s
+construction. Co-indexation somehow prevents the subject element in the
+valence from appearing as an argument.</p>
+<a name="magic_subj_block">
+<details>
+<summary>
+Keeping the subject out of the verb phrase: more set unification tricks
+</summary>
+<p>How the subject is prevented from being realized as an argument in
+the verb phrase is not so clear. They list the valence of the <em>Verb
+Phrase</em> construction (figure 26) as
+<code>↓2 {[rel [gf sub]], #1 []+}</code>, where <code>↓2</code> is a
+coindex of the valence of the verb, <code>+</code> indicates “one or
+more”.</p>
+Perhaps we can require that there is only a single element in the
+valence that can have <code>rel = [gf sub]</code>. I hypothesized above
+that we would also need such a mechanism to have mutually exclusive
+θ-roles. Then, this notation specifies that the coindexed elements are
+not that element with <code>gf sub</code>.
+</details>
+<p></a></p>
+<p>In fact, phrase-structure constructions are supposed to only define
+the hierarchy between constituents (via the constituent set). But in
+general, they do not need to specify how these constituents are linearly
+ordered in the sentence (via the pattern attribute); this is the job of
+ordering constructions. In English, phrase-structure constructions such
+as <em>determination</em> or <em>Verb Phrase</em> play both roles. On
+the other hand, in languages where word order is said to be more free,
+word order often carry discourse/pragmatic information. CxG is a good
+tool to describe this constraints, as AVM features can be of any nature.
+<span class="citation" data-cites="fried_construction_2004-1">Fried and
+Östman (2004b)</span> shows a <em>Basic Clause Structure</em> ordering
+construction for Hungarian which relies on discourse and phonological
+features. We can also read <span class="citation"
+data-cites="lambrecht_interaction_2004">Lambrecht (2004)</span>’s study
+of the “C’est X comme Y” construction in Spoken French for a detailed
+example.</p>
+<p>At this point, we’re ready to define what a grammatical sentence is:
+it is a sentence which can be constructed as the result of the
+unification of a set of lexical, phrase-structure and ordering
+constructions. More precisely, the unification of the constructions
+specifies the order of its constituents via the pattern attribute, and
+these constituents themselves either possess a <code>lexeme</code>
+property or a pattern attribute specifying order of sub-constituents.
+The sentence is the recursive concatenation of these nested
+<code>lexeme</code> values.</p>
+<h3 id="summary">Summary</h3>
+<ul>
+<li>The grammar of a language is a set of constructions. There are
+several types of constructions.</li>
+<li>Lexical constructions only have external properties.</li>
+<li>Verb constructions are lexical constructions that are special
+because they have a valence set that specifies a minimal argument
+structure.</li>
+<li>Phrase-structure constructions specify a hierarchy via their
+constituent sets, but not necessarily their order.</li>
+<li>Ordering construction specify the order in which the constituent
+phrases appear (the pattern). In English, most/all phrase-structure
+constructions also specify an order but in other languages, the order
+can depend on discourse/pragmatics (“information structure”).</li>
+<li>Unification is an operation on constructions. It is relatively
+simple when we work with AVMs but messier when values can be sets.</li>
+<li>A sentence is grammatical iff there is a subset of constructions
+which can be unified, such that the <code>pattern</code> and
+<code>lexeme</code> values spell out the words of the sentence in the
+correct order.</li>
+</ul>
+<h2 id="comparison-with-context-free-grammars">Comparison with
+context-free grammars</h2>
+<h3 id="declarative-vs-procedural-formalism">Declarative vs procedural
+formalism</h3>
+<p>As we have seen, a phrase-structure construction or an ordering
+construction can be written as a context-free rule and some equations.
+This notation can be helpful to understand better how constructions
+differ from context-free rules alone. The equations specify two
+different things:</p>
+<ul>
+<li>constraints on the daughter constituents (internal properties, in
+the box representation)</li>
+<li>attributes of the constituent as a whole (external properties, in
+the box representation)</li>
+</ul>
+<p>It might seem that this notation emphasizes the top-down generation
+process. Starting from the <code>S</code> non-terminal, the
+non-terminals are rewritten by replacing the LHS with the RHS of rules,
+until all the non-terminals have been replaced by a string of
+terminals.</p>
+<p>But it should not obscure an important characteristic of
+unification-based grammars: the order of the application of the rules
+does not matter. Consider the sentence “John loves Mary” and its
+structure <code>[NP [V NP]]</code>. In context-free grammars, this is
+generated by applying the rule <code>S → NP VP</code>, then
+<code>VP → V NP</code>. But we cannot generate first <code>V NP</code>
+using the 2nd rule, then somehow identify this with the <code>VP</code>
+in the LHS of the first rule <em>without parsing again</em>. Nothing
+indicates that <code>V NP</code> is a constituent (a whole) that can be
+generated by a single non-terminal; In other words <code>V</code> and
+<code>NP</code> are not grouped in a single entity and do not carry
+external features. With construction grammar, and more generally,
+unification-based grammar, the information is not lost and we can
+generate in any direction:</p>
+<ul>
+<li>top-down: a VP construction unifies with V and NP constructions if
+the <em>external</em> properties of the V and NP match, as specified by
+the <em>internal</em> properties of the VP.</li>
+<li>bottom-up: a VP construction unifies with a S construction and a NP
+construction if the <em>external</em> properties of the VP and the NP
+match, as specified by the <em>internal</em> properties of the S.</li>
+</ul>
+<p>We can create the final construction (that licenses a sentence) by
+applying rules in any order. This order-independence is what <span
+class="citation" data-cites="shieber_introduction_2003">Shieber
+(2003)</span> calls <em>non-procedurality</em> or
+<em>declarativeness</em>, but I don’t understand how it comes about
+exactly yet. For instance, <span class="citation"
+data-cites="shieber_introduction_2003">Shieber (2003)</span> warns us
+that various extensions of unification-based grammar threatens
+declarativeness, such as <code>ANY</code> values (that I’ve discussed in
+details boxes). However, I don’t see a way for <code>ANY</code> values
+to be present in the result of a unification with one order, but absent
+when we unify in another order.</p>
+<h3 id="no-atomic-non-terminals">No atomic non-terminals</h3>
+<p>Context-free grammars are also inelegant in that non-terminals are
+atomic symbols, i.e. they lack internal features. Take verb phrases, for
+example, and consider that verbs take a different number and different
+types of arguments (subcategorization). In CxG, the lexical construction
+specifies a minimal argument structure in a rather fine-grained way.
+<em>Each</em> such unique argument structure corresponds to a
+<em>distinct</em> verb phrase non-terminal in a context-free grammar.
+That’s a lot of non-terminals.</p>
+<p>Since they’re atomic, these non-terminal do not encode any
+information about argument structure themselves. Only the rules tell us
+what they can generate.</p>
+<h3
+id="unification-based-grammars-are-more-powerful-than-context-free-grammars">Unification-based
+grammars are more powerful than context-free grammars</h3>
+<p><span class="citation" data-cites="shieber_evidence_1985">Shieber
+(1985)</span> shows that natural languages are generally not
+context-free. He exhibits syntactic structures (cross-serial
+dependencies) from Swiss-German that cannot be produced by a
+context-free grammar. However, it is easy to imagine how these
+structures can be handled in the construction grammar framework. We can
+create a phrase-structure and ordering construction that would match the
+arguments and the verbs in the correct order.</p>
+<p>Construction grammar (and unification-based grammars) are more
+powerful than context-free grammars. But I don’t know if
+unification-based grammars (without extensions like <code>ANY</code>)
+are equivalent to context-sensitive grammars, or some restricted subset
+of it.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>I’ve tried to convince you that constructions are very frequent and
+pose challenges to bottom-up semantics. By seeing everything as a
+construction and using a simple mechanism to combine constructions,
+unification, one can describe complex linguistic phenomena elegantly and
+more or less formally. Moreover, constructionist approaches are
+appealing to cognitive scientists and AI researchers, because they try
+to account for language acquisition and place linguistic skills among
+more general cognitive skills.</p>
+<p>In order to learn more about constructions, a fascinating follow-up
+read would be <span class="citation"
+data-cites="lakoff_women_1987">Lakoff (1987)</span>’s “Women, fire, and
+dangerous things”. While Lakoff has pretty much the same definition of
+constructions as pairings of meaning and form, he goes much further in
+explaining <em>why</em> constructions are the way they are. In short, he
+argues that constructions can be in large part predicted (“motivated”)
+given i) a semantic description (“idealized cognitive models”) along
+with ii) general “central principles” that relate meaning and form
+within a language. In that sense, a construction is a “cognitively
+efficient way to express” meaning. Then, constructions are not (only?)
+related via inheritance in the space of constructions, but via
+metaphoric and metonymic mapping in semantic space. I would like to
+summarize that in the future.</p>
+<p>I also hope to read and perhaps comment <span class="citation"
+data-cites="goldberg_constructions_2006">Goldberg (2006)</span>’s second
+book, which deals with learning and generalization.</p>
+<h2 id="appendix">Appendix</h2>
+<h3 id="bottom-up-semantics-and-constructions">Bottom-up semantics and
+constructions</h3>
+<p><a name="reconcile"></p>
+<p>How can we reconcile bottom-up computation of meaning and seemingly
+non-compositional phenomena that are explained via constructions?</p>
+<p>Let us start with formal semantics. If we do not modify the
+composition operator (function composition), in order to change the
+semantics of phrases of multiple words, we have to change the meaning of
+individual words. We could associate each verb with several meaning
+functions, each taking a different number of arguments, and each of
+these arguments could also have different syntactic types (noun phrase,
+prepositional phrase, adjective phrase).</p>
+<p>The different senses of the verbs in different constructions are
+still very close to each other, and naively duplicating the meaning
+functions and only “changing some minor aspect” in the resulting
+function would not capture these similarities. Instead, we could create
+a function that derives the specific meaning function from a basic (say,
+the “transitive”) meaning function. This would be in-line with the
+general spirit of formal semantics, heavily relying on lambda-calculus.
+For example, one could imagine a function <span
+class="math inline">\(f_{\mathrm{caused-motion}}\)</span> and apply it
+to the generic meaning <span
+class="math inline">\(m_{\mathrm{sliced}}\)</span> to derive the
+“caused-motion meaning of the verb sliced”.</p>
+<p>Still, this would be a constructionist solution, in that specific
+constructions would get dedicated representations as functions. It would
+also be projectionist, in that meaning is completely encoded in the
+lexicon. I guess this is one way in which, as <a
+href="https://web.stanford.edu/~bclevin/wecol04.pdf">Levin notes</a>,
+both approaches converge.</p>
+<p>There are still important problems.</p>
+<ol type="1">
+<li>Since there are several possible constructions per verb, to analyze
+a given sentence, how do we choose which function should be applied? We
+could start different semantic analysis of the sentence in parallel
+(bottom-up) by applying the different functions. As soon as there is a
+mismatch in the number of arguments or the syntactic category of the
+arguments, a given interpretation stops being considered and is pruned.
+But note that this would not be enough to distinguish the “way
+construction” from the “caused motion”, which both have an additional NP
+argument compared to the “transitive”.</li>
+<li>Constructions such as the “caused motion” are very
+<em>productive</em>. It seems that we can’t really list all the verbs
+that can be used in this sense.</li>
+<li>There are constructions that lack verbs (Goldberg cites examples
+from French, Russian, German).</li>
+<li>It is probably not great to consider that the transitive
+construction is neutral. Indeed, we can use intransitive verbs such as
+“walk” within the transitive construction, so it cannot really be
+neutral.</li>
+</ol>
+<p>Let us directly turn to the connectionist approaches. We can naively
+assume that the vector of a given verb encodes whether or not the verb
+can enter the construction. Then, the composition operator <span
+class="math inline">\(f\)</span> could vary slightly its outputs to
+incorporate the additional meanings contributed by the constructions.
+Does the connectionist approach suffer from the problems above?</p>
+<p>Point 2) indicates that whether a verb can enter a construction or
+not must be a matter of generalisation, since we don’t see all the
+possible verb/construction pairs during language acquisition. Then we
+hope that whether a verb can enter a certain construction is
+<em>computed</em> by a certain function of syntactic and semantic
+features. (This probably also solves 1) at once.)</p>
+<p>Again, this is in some way a constructionist solution: for each
+construction, we can try to find within our neural network <span
+class="math inline">\(f\)</span> (via some sort of probing, for example)
+a subnetwork that predicts, for any verb vector, whether this vector
+potentially participate in a certain construction. This relies on the
+existence of constructions.</p>
+<h2 class="unnumbered" id="references">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent"
+role="doc-bibliography">
+<div id="ref-chomsky_syntactic_1957" class="csl-entry"
+role="doc-biblioentry">
+Chomsky, Noam. 1957. <span>“Syntactic <span>Structures</span>.”</span>
+</div>
+<div id="ref-fried_construction_2004" class="csl-entry"
+role="doc-biblioentry">
+Fried, Mirjam, and Jan-Ola Östman. 2004a. <em>Construction Grammar in a
+Cross-Language Perspective</em>. Vol. 2. John Benjamins Publishing.
+</div>
+<div id="ref-fried_construction_2004-1" class="csl-entry"
+role="doc-biblioentry">
+———. 2004b. <span>“Construction <span>Grammar</span>: <span>A</span>
+Thumbnail Sketch.”</span> <em>Construction Grammar in a Cross-Language
+Perspective</em>, 11–86.
+</div>
+<div id="ref-goldberg_constructions_1995" class="csl-entry"
+role="doc-biblioentry">
+Goldberg, Adele E. 1995. <em>Constructions: <span>A</span> Construction
+Grammar Approach to Argument Structure</em>. University of Chicago
+Press.
+</div>
+<div id="ref-goldberg_constructions_2006" class="csl-entry"
+role="doc-biblioentry">
+———. 2006. <em>Constructions at Work: <span>The</span> Nature of
+Generalization in Language</em>. Oxford University Press on Demand.
+</div>
+<div id="ref-jurafsky_speech_2009" class="csl-entry"
+role="doc-biblioentry">
+Jurafsky, Daniel, and James H Martin. 2009. <span>“Speech and
+<span>Language</span> <span>Processing</span>.”</span>
+</div>
+<div id="ref-kay_functional_1984" class="csl-entry"
+role="doc-biblioentry">
+Kay, Martin. 1984. <span>“Functional <span>Unification</span>
+<span>Grammar</span>: <span>A</span> <span>Formalism</span> for
+<span>Machine</span> <span>Translation</span>.”</span> In <em>10th
+<span>International</span> <span>Conference</span> on
+<span>Computational</span> <span>Linguistics</span> and 22nd
+<span>Annual</span> <span>Meeting</span> of the <span>Association</span>
+for <span>Computational</span> <span>Linguistics</span></em>, 75–78.
+Stanford, California, USA: Association for Computational Linguistics. <a
+href="https://doi.org/10.3115/980491.980509">https://doi.org/10.3115/980491.980509</a>.
+</div>
+<div id="ref-kay_grammatical_1999" class="csl-entry"
+role="doc-biblioentry">
+Kay, Paul, and Charles J Fillmore. 1999. <span>“Grammatical
+<span>Constructions</span> and <span>Linguistic</span>
+<span>Generalizations</span>: <span>The</span> <span>What</span>’s
+<span>X</span> <span>Doing</span> <span>Y</span>?
+<span>Construction</span>.”</span> <em>Language</em>, 1–33.
+</div>
+<div id="ref-lakoff_women_1987" class="csl-entry"
+role="doc-biblioentry">
+Lakoff, George. 1987. <span>“Women, <span>Fire</span>, and
+<span>Dangerous</span> <span>Things</span>. <span>What</span>
+<span>Categories</span> <span>Reveal</span> about the
+<span>Mind</span>.”</span> University of Chicago Press.
+</div>
+<div id="ref-lambrecht_interaction_2004" class="csl-entry"
+role="doc-biblioentry">
+Lambrecht, Knud. 2004. <span>“On the Interaction of Information
+Structure and Formal Structure in Constructions: <span>The</span> Case
+of <span>French</span> Right-Detached Comme-<span>N</span>.”</span> In
+<em>Construction <span>Grammar</span> in a Cross-Language
+Perspective</em>, 157–99. John Benjamins.
+</div>
+<div id="ref-maillard_jointly_2019" class="csl-entry"
+role="doc-biblioentry">
+Maillard, Jean, Stephen Clark, and Dani Yogatama. 2019. <span>“Jointly
+Learning Sentence Embeddings and Syntax with Unsupervised
+Tree-Lstms.”</span> <em>Natural Language Engineering</em> 25 (4):
+433–49.
+</div>
+<div id="ref-pollack_recursive_1990" class="csl-entry"
+role="doc-biblioentry">
+Pollack, Jordan B. 1990. <span>“Recursive Distributed
+Representations.”</span> <em>Artificial Intelligence</em> 46 (1-2):
+77–105.
+</div>
+<div id="ref-shieber_evidence_1985" class="csl-entry"
+role="doc-biblioentry">
+Shieber, Stuart M. 1985. <span>“Evidence Against the Context-Freeness of
+Natural Language.”</span> In <em>Philosophy, Language, and Artificial
+Intelligence</em>, 79–89. Springer.
+</div>
+<div id="ref-shieber_introduction_2003" class="csl-entry"
+role="doc-biblioentry">
+———. 2003. <em>An Introduction to Unification-Based Approaches to
+Grammar</em>. Microtome Publishing.
+</div>
+<div id="ref-vaswani_attention_2017" class="csl-entry"
+role="doc-biblioentry">
+Vaswani, Ashish, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion
+Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. 2017.
+<span>“Attention Is <span>All</span> You <span>Need</span>.”</span> In
+<em>Advances in <span>Neural</span> <span>Information</span>
+<span>Processing</span> <span>Systems</span> 30</em>, edited by I.
+Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan,
+and R. Garnett, 5998–6008. Curran Associates, Inc. <a
+href="http://papers.nips.cc/paper/7181-attention-is-all-you-need.pdf">http://papers.nips.cc/paper/7181-attention-is-all-you-need.pdf</a>.
+</div>
+<div id="ref-winter_elements_2016" class="csl-entry"
+role="doc-biblioentry">
+Winter, Yoad. 2016. <em>Elements of Formal Semantics: <span>An</span>
+Introduction to the Mathematical Theory of Meaning in Natural
+Language</em>. Edinburgh University Press.
+</div>
+</div>
+</body>
+</html>

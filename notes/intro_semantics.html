@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Tom Bosc" />
+  <meta name="description" content="A very fast introduction to formal semantics, from reference to intension to structured propositions." />
+  <title>The incremental development of formal semantics</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    div.csl-bib-body { }
+    div.csl-entry {
+      clear: both;
+    }
+    .hanging div.csl-entry {
+      margin-left:2em;
+      text-indent:-2em;
+    }
+    div.csl-left-margin {
+      min-width:2em;
+      float:left;
+    }
+    div.csl-right-inline {
+      margin-left:2em;
+      padding-left:1em;
+    }
+    div.csl-indent {
+      margin-left: 2em;
+    }
+  </style>
+  <link rel="stylesheet" href="mine.css" />
+  <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"
+  type="text/javascript"></script>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">The incremental development of formal semantics</h1>
+<p class="author">Tom Bosc</p>
+<p class="date">2020-10-23 (updated 2021-07-03)</p>
+</header>
+<hr />
+<p>The goal of formal semantics is to determine the truth or falsehood
+of natural language sentences according to a mathematical description of
+the world. Meaning is the tool which determines these truth-values; in
+other words, specifying what meaning is should allow us to say what is
+true and what is not.</p>
+<p>For that purpose, how can we define meaning? We will try to answer
+the question incrementally, and only using simple sentences such as ⌜X
+is Y⌝ and ⌜X thinks that Y⌝. Although syntactically simple, they have
+been real puzzles for linguists and philosophers: sentences that broke
+theories and helped repair them. We will start with a naive theory,
+break it, fix it, break it again with a different puzzle and try to fix
+it again.</p>
+<p>For conciseness, we will skip a lot of things usually covered by
+textbooks. This includes generalized quantifiers, which were an
+important development. Apart from this omission, we will more or less
+follow the history of the discipline. I don’t think these notes are
+detailed enough to serve as a standalone introductory text. Initially, I
+only wanted to explain how to go beyond intension, starting where <span
+class="citation" data-cites="winter_2016">Winter (2016)</span>’s
+excellent textbook stops. This is what I have done in the third section
+about structured propositions, but I ended up adding a lot more to give
+context.</p>
+<h2 id="method-and-assumptions">Method and assumptions</h2>
+<h3 id="content-meaning-and-the-general-method">Content, meaning and the
+general method</h3>
+<p>The meaning of an expression will have its intuitive and informal
+sense. When we judge that two sentences have different meanings, it is
+as competent speakers that we do so, and we don’t need to justify
+ourselves.</p>
+<p>On the other hand, the content of an expression (a sub-string or
+sub-expression within a sentence, be it an isolated word, a sequence of
+words or the entire sentence) is a mathematical object. The goal is to
+define this mathematical object so that it matches meaning. Starting
+from a naive definition of content, we are going to show sentences that
+have different meanings, yet are assigned a mathematically identical
+content. Such sentences demonstrate that our theory is broken, and we
+will have to redefine the mathematical definition of content so that 1)
+our example sentences will get different contents, while 2) other
+sentences that were not problematic for our theory will be assigned
+content that still discriminates between them. We will repeat this
+method two times.</p>
+<p>Some authors use “content” and “meaning” interchangeably: I did that
+in the introduction. Similarly, physicists call “position” the
+<em>predicted</em> position of the object of study, even though it might
+not match observations perfectly. Now, I’ll differentiate the two for
+clarity.</p>
+<h3 id="semantics-rely-on-syntax">Semantics rely on syntax</h3>
+<p>The theory that we will build should be <a
+href="https://en.wikipedia.org/wiki/Principle_of_compositionality">compositional</a>:
+the content of an expression should be a function of content of
+sub-expressions. Moreover, the order of composition will be guided by
+the constituency tree of the expression. Please read on if this doesn’t
+make sense, or skip if it’s clear.</p>
+<p>It will probably be intuitive that the content of the sentence “The
+third Cabinet of Angela Merkel was sworn in on 17 December 2013” should
+depend on the content of sub-expressions like “The third Cabinet of
+Angela Merkel” or “sworn in” or “on 17 December 2013”. And in turn, the
+content of “The third Cabinet of Angela Merkel” depends on the content
+of “The third Cabinet” and on the content of “Angela Merkel”. This is a
+quick and intuitive justification for compositionality.</p>
+<p>Moreover, it also seems that not every sub-expression should have
+content. For instance, “in on 17” seems to lack context, to be
+incomplete, to be meaningless without more information.</p>
+<p><em><a
+href="https://en.wikipedia.org/wiki/Parse_tree#Constituency-based_parse_trees">Constituency
+trees</a></em> are the scaffold for the content function. Constituency
+trees are binary trees, where each node represents an expression, and
+the two children of this node represent two sub-expressions, which,
+concatenated, form the expression of the parent. The expressions (labels
+of nodes) in a constituency tree are called <em>constituents</em>. For
+instance, our example sentence is split in “The third Cabinet of Angela
+Merkel” and “was sworn in on 17 December 2013”. These correspond to the
+grammatical categories of <em>subject</em> and <em>predicate</em>. Then,
+the children of these two nodes divide each constituent in two, and so
+recursively, such that the leaves are associated with individual
+words.</p>
+<p>By the way, the parsing algorithm which computes constituency trees
+does not necessarily split constituents in a top-down fashion, from
+sentences to words. But whatever parsing algorithm is used, the
+concatenation of expressions of sibling nodes is equal to the expression
+associated with their parent nodes.</p>
+<p>Content will be computed bottom-up, from the leaves (words) to the
+root node representing the entire sentence. In particular, the content
+of a given constituent in the tree will depend on its children.
+Expressions like “in on 17” are not constituents: they overlap over two
+sibling constituents (sworn in” and “on 17 December 2013”). Thus, the
+content function will only be defined on constituents.</p>
+<p>I have appealed to intuition to justify the analysis of the example,
+but syntacticians delineate them in a data-driven manner using <a
+href="https://en.wikipedia.org/wiki/Constituent_(linguistics)#Tests_for_constituents_in_English">constituency
+tests</a>. How to obtain the constituency trees is a matter of syntax,
+not today’s topic, so we will consider that we have access to such
+trees. The semantic analysis of a sentence – the computation of the
+content of that sentence – will depend on the syntactic analysis of that
+sentence. The hidden assumption here is that syntax is relatively
+independent of questions of meaning and that syntactic analysis can be
+performed as a pre-processing step. This assumption is often illustrated
+by Chomsky’s “<a
+href="https://en.wikipedia.org/wiki/Colorless_green_ideas_sleep_furiously">Colorless
+green ideas sleep furiously</a>”, and is obviously debatable.</p>
+<p>In short, we assume 1) that syntax is independent of semantics, that
+the construction of the constituency tree does not appeal to meaning at
+all, and that we have access to such trees; and 2), that content is a
+recursively-defined function, and that the recursion follows the
+syntactic tree of the sentence. Now, the question is the following:
+given a sentence and its constituency tree, how could we define content
+to match meaning?</p>
+<h2 id="content-as-reference">Content as reference</h2>
+<p>Our first, naive theory will consider that the content of names and
+noun phrases will directly be the things that they refer to in the
+actual world. For instance, the meaning of “Angela Merkel” is the person
+Angela Merkel, and “all the green apples harvested this summer by my
+uncle” means all the green apples harvested this summer by my uncle.
+This sounds trivial, circular, hard to formalize, and useless. However,
+this gets us a long way.</p>
+<h3 id="linking-words-to-sets-with-structures">Linking words to sets
+with structures</h3>
+<p>A <em>vocabulary</em> is a set, which elements are called
+<em>words</em>. A <em>language</em> is a subset of all possible finite
+sequences of words. The elements of this set are called
+<em>sentences</em>. Interesting languages put strong grammatical
+requirements on their sentences (for instance, such word cannot follow
+such other word) but this is not our concern. We naively assume that
+syntax is independent of questions of meaning, and that we have access
+to a constituency parser.</p>
+<p>The actual world is described as a mathematical <a
+href="https://en.wikipedia.org/wiki/Structure_(mathematical_logic)"><em>structure</em></a>,
+<em>model</em>, or <em>world</em>. To simplify a little, it consists
+in:</p>
+<ul>
+<li>a domain <span class="math inline">\(D\)</span></li>
+<li>a function which maps each word of the language to a
+<em>referent</em> that is either an element of <span
+class="math inline">\(D\)</span>, or a subset of <span
+class="math inline">\(D\)</span>, or a relation on <span
+class="math inline">\(D^n\)</span></li>
+</ul>
+<p><span class="math inline">\(D\)</span> is partitioned in two subsets
+<span class="math inline">\(D_e\)</span> and <span
+class="math inline">\(D_t\)</span>:</p>
+<ul>
+<li><span class="math inline">\(D_e\)</span> contains the
+<em>individuals</em>, or <em>entities</em></li>
+<li><span class="math inline">\(D_t\)</span> contains the truth-values
+<code>true</code> and <code>false</code></li>
+</ul>
+<p>For example, if we take the entire set of things in the world to be
+our domain, the structure has a function mapping “Angela Merkel” to the
+individual Angela Merkel. The structure also maps the constituent
+“Chancellor” to all the Chancellors that have ever been and “of Germany”
+to things that are German (loosely speaking), so that both are subsets
+of individuals of <span class="math inline">\(D\)</span>.</p>
+<p>It seems that the “Chancellor of Germany” refers to the intersection
+of the subsets denoted by “Chancellor” and “of Germany”. So we realize
+that we can obtain the referent of larger expressions
+<em>bottom-up</em>.</p>
+<p>So far, we have discussed the referents of noun phrases and have
+established that they point to elements or subsets in the domain. But
+what do verbs refer to and how do we obtain truth-values for entire
+sentences? Let’s look at a simple sentence, “Angela Merkel runs”. It has
+the following constituency tree:</p>
+<pre><code>           S      
+       /       \  
+Angela Merkel runs</code></pre>
+<p>Intuitively, this sentence is true if and only if Angela Merkel runs.
+How can we express this necessary and sufficient condition and relate it
+to our structure? Well, since Angela Merkel is an individual of the
+domain, we let “runs” denote the subset of individuals that run. Then,
+the entire sentence is true iff Angela Merkel is in that subset. This
+mechanism also works with more complex. For instance, in the sentence
+“Angela Merkel talked for two hours with Hu Jintao during the G8”, the
+predicate “talked for […]” will be compositionally reduced to the subset
+of the domain containing elements which have talked to Hu Jintao during
+the G8 for two hours.</p>
+<p>In summary, one can think of a structure as 1) a sort of coherent
+database of facts defined in terms of elements, sets, and relations and
+2) a function linking words to these elements, sets, and relations.
+Given a structure, we can proceed bottom-up the constituency tree and
+apply simple set-theoretic operations to compute the referent of parent
+nodes.</p>
+<aside>
+It is outside of the scope of the theory to say how this formalized
+description of the world is obtained, but it is surely a big, practical
+and philosophical problem! Also, we ignore the problem of polysemous
+words (words with several meanings). Perhaps reference is not a function
+but a relation. It gets tricky to formalize.
+</aside>
+<p>It seems that reference is a possible candidate to represent meaning.
+Indeed, reference follows the constituency tree, just like we
+established above that content should. Moreover, the referent of a
+sentence is a truth-value. Our first theory is nothing more than that:
+content is reference.</p>
+<h3 id="lambda-calculus-for-expressing-computations">Lambda-calculus for
+expressing computations</h3>
+<p>We have not defined precisely the content function, but we have
+merely said that it is recursive and it performs set-theoretic
+operations like set intersection. As we go beyond very simple sentences,
+we will quickly need ways to express relatively complicated computations
+of reference. For instance, we need to be able to describe the meaning
+of function words like “and”, “not”, etc. but these words do not refer;
+they seem to glue together the referents of constituents nearby in a
+specific way. Other words like “herself” do seem to refer, but the
+reference is indirectly given by the subject of the sentence, higher up
+the tree. To deal with these words, we will define content as a function
+that computes referents.</p>
+<p>From <span class="citation" data-cites="winter_2016">Winter
+(2016)</span>’s textbook, we take the following example: “Tina praised
+herself”. Its constituency tree looks like this:</p>
+<pre><code>        S           
+     /     \        
+ Tina       VP      
+           /  \     
+     praised herself</code></pre>
+<p>Here, “herself” refers to the same individual as the subject of the
+sentence, “Tina”. The problem is that this subject is higher up the
+tree. As a result, the referent of the whole predicate “praised herself”
+also depends on the subject “Tina”. How can we express this? We would
+like to define the content of the predicate “praised herself” to be a
+<em>function</em> of the content of the subject, not a static, fixed
+subset of the domain. The computation of the subset denoted by “herself”
+would be delayed until the top of the tree, where we have access to the
+subject.</p>
+<p>To define this function, we use lambda-calculus. It is a formal
+language whose elements, the <em>lambda-expressions</em>, denote
+functions. Here is an example of a lambda-expression: <span
+class="math inline">\(\lambda x.\lambda y.x+y\)</span>. It denotes the
+function of a variable <span class="math inline">\(x\)</span> that
+returns the function of a variable <span
+class="math inline">\(y\)</span> that sums <span
+class="math inline">\(x\)</span> and <span
+class="math inline">\(y\)</span>. The variables <span
+class="math inline">\(x\)</span> and <span
+class="math inline">\(y\)</span> themselves are lambda-expressions.
+We’re going to use this language to define the content of
+constituents.</p>
+<p>Lambda-calculus can only describe functions of one argument, which
+matches the binary structure of constituency trees: one sibling which
+content is a lambda-expression will “consume” the other sibling’s
+content (which can also be a lambda-expression) to produce the content
+of the parent constituent. Moreover, the example shows how a
+lambda-expression can denote a function that returns another function
+(see also <a href="https://en.wikipedia.org/wiki/Currying">currying</a>,
+the conversion of a function of several arguments into a composition of
+one-argument functions). We want the content of “praised herself” to be
+a function that will consume the content of “Tina”, which we can achieve
+by having the content of “herself” return that function.</p>
+<p>We are now ready to reverse-engineer the content of “herself” based
+on what we want the content of higher constituents (of “praised herself”
+and the whole sentence) to be. This is summarized in the following trees
+where content is added under the constituents between <code>{}</code>.
+The structure maps “praised” to the mathematical relation <span
+class="math inline">\(\mathrm{Pr}\)</span>, “Tina” to <span
+class="math inline">\(\mathrm{Ti}\)</span>.</p>
+<pre><code>          S                  
+     {Pr(Ti,Ti)}             
+    /           \            
+Tina            VP           
+{Ti}         {λx.Pr(x,x)}    
+              /       \      
+         praised      herself
+           {Pr}        {???} </code></pre>
+<p>You can take a moment to try to figure out the content of “herself”,
+or read on.</p>
+<p>If <span class="math inline">\(\mathrm{P}\)</span> is a binary
+relation defined in the structure, we use the notation <span
+class="math inline">\(\mathrm{P}(x, y)\)</span> to be the function that
+is true iff <span class="math inline">\((x, y) \in P\)</span>. We define
+the content of “herself” as <span
+class="math inline">\(λP.λx.P(x,x)\)</span>, and apply this function
+recursively, bottom-up to obtain:</p>
+<pre><code>           S                       
+{λx.Pr(x,x)(Ti)=Pr(Ti,Ti)}         
+     /           \                 
+ Tina            VP                
+ {Ti} {λP.λx.P(x,x)(Pr)=λx.Pr(x,x)}
+                /      \           
+          praised      herself     
+            {Pr}    {λP.λx.P(x,x)} </code></pre>
+<p><span class="math inline">\(\mathrm{Pr}(\mathrm{Ti},
+\mathrm{Ti})\)</span> is precisely what we want, since it is true iff
+Tina praises herself.</p>
+<p>Formal semantics uses the <em>simply-typed</em> variant of
+lambda-calculus. Thus the lambda-expressions have types which constrain
+the arguments they can take and the values they can return, much like
+types of statically-typed programming languages. In most texts, the
+types of the variables are indicated as indices, possibly with brackets
+to indicate input and output types. In our case, we would write the
+content of “herself” as <span
+class="math inline">\(λP_{et}.λx_{e}.P(x,x)\)</span>: a simple entity
+like <span class="math inline">\(x\)</span> has type <span
+class="math inline">\(e\)</span>, a VP predicate has type <span
+class="math inline">\(et\)</span> as it consumes an entity and returns a
+truth-value of type <span class="math inline">\(t\)</span>. The type of
+the content of “herself” is <span
+class="math inline">\((et)(et)\)</span> as it consumes a predicate of
+type <span class="math inline">\(et\)</span> (like <span
+class="math inline">\(\mathrm{Pr}\)</span>) and returns the same
+type.</p>
+<aside>
+<p>The formal semantics of lambda-calculus can probably be treated like
+the formal semantics of English: a grammar defines the valid
+expressions, and a structure maps these expressions to a set. An obvious
+difference is that lambda-calculus expressions denote mathematical
+functions, not individuals or truth-values. Here we only care about
+defining the semantics of English and use lambda-calculus as a tool, not
+as a second application of formal semantics to mathematics or
+programming.</p>
+This remark is only meant to illustrate that the domain of a
+mathematical structure can be any set, which makes formal semantics very
+general, and applicable to more than natural languages. In fact, the
+framework was developped to formalize mathematical reasoning and led to
+the mathematical study of logic.
+</aside>
+<p>As you may have noticed, constituency trees only <em>partially</em>
+guide the order of composition, as we never know in advance whether the
+left sibling is going to consume the right one or the reverse. In fact,
+the order vary depending on the two siblings: if the object of “praised”
+is “Mary”, or any term which directly refers to an individual of the
+domain (or a subset), then the content of “praised” takes its sibling as
+argument. However, when “herself” is used as the object, it is reversed:
+the content of “herself” composes with the content of the verb.</p>
+<p>To recap, sentences are meaningless sequences of symbols, until they
+are interpreted by a structure. A structure assigns referents (elements,
+sets, relations) to words. The referents of intermediary constituents
+are computed recursively by some function, following a constituency
+tree. The <em>truth-value</em> (true or false) of the entire sentence is
+the content of the root constituent. The precise computations performed
+are defined using lambda-calculus. In this early-stage theory, the
+content of a constituent is its referent according to the structure, or,
+for function words like “herself” and “and”, some function that is used
+to compute the content of constituents higher up in the tree. Let us now
+see problems with this theory.</p>
+<h2 id="content-as-intension">Content as intension</h2>
+<h3 id="freges-puzzle">Frege’s puzzle</h3>
+<p><span class="citation" data-cites="frege1892sinn">Frege (1892)</span>
+showed that two constituents can have the same referents, yet, different
+contents:</p>
+<ol type="1">
+<li>The noun phrases “the evening star” and “the morning star” both
+refer to Venus. However, “the evening star is the morning star” seems to
+have a different meaning than “the evening star is the evening star”,
+even if both sentences are true. Since these sentences differ only by
+the substitution of “the morning star” by “the evening star”, and since
+our theory is compositional, the two constituents should have a
+different content as well.</li>
+<li>Any true sentences <span class="math inline">\(T_1\)</span> and
+<span class="math inline">\(T_2\)</span> both refer to
+<code>true</code>. However, this makes the content of belief sentences
+⌜Fran believes <span class="math inline">\(T_1\)</span>⌝ and ⌜Fran
+believes <span class="math inline">\(T_2\)</span>⌝ identical. The
+problem is that the belief relation is modeled as a relation between
+individuals and truth-values. This is terrible: if Fran believes in a
+true sentence, then she believes in all other true sentences, and
+similarly for false sentences.</li>
+</ol>
+<p>A single issue underlies both puzzles. There are pairs of sentences
+where two constituents are swapped (noun phrases in 1), embedded
+sentences in 2)). These constituents have the same referents. Since
+content is computed compositionally and bottom-up (from words to bigger
+constituents), then if the only different intermediary constituents have
+the same content, sentences also obtain the same truth-values.
+Therefore, content cannot be reduced to reference and we need to improve
+our theory.</p>
+<h3 id="modality-and-possible-worlds">Modality and possible worlds</h3>
+<p>Let <code>A</code> be a structure describing things in our world, and
+denote by <code>f_A</code> the reference function in that structure. In
+our current theory, we compute the referent of “The evening star is the
+morning star” in 2 steps:
+<code>(f_A("the evening star") == f_A("the morning star")) = (Venus == Venus) = true</code>.
+Similarly, “The evening star is the evening star” is analyzed as
+<code>(f_A("the evening star") == f_A("the evening star")) = (Venus == Venus) = true</code>
+which evaluates to <code>true</code>. But the second step is optional:
+<code>(f_A(evening_star) == f_A(evening_star))</code> directly evaluates
+to <code>true</code>, and we don’t even need to consider the particular
+referent of “the evening star” in A. In other words, regardless of the
+the way things are in the world, this sentence is true. In such cases,
+people often say that “it must be true” or that “it is necessary”. On
+the other hand, there exists a structure <code>B</code> identical to
+<code>A</code>, but with <code>f_B("the evening star") != Venus</code>,
+and in which “the morning star is the evening star” is
+<code>false</code>. Therefore, it is conceivable, imaginable or possible
+that “the evening star is the morning star” were false, despite the fact
+that it is true in the actual world.</p>
+<p>Formally, a sentence is <em>necessary</em> if it is true in all
+possible worlds (in mathematical logic, we say it is <em>valid</em>). A
+sentence is <em>contingent</em> if it is true in the actual world, but
+is false in a different possible world. A sentence is <em>possible</em>
+if it is true in at least one possible world. These definitions rely on
+the set of all possible worlds, which we will talk about more later.</p>
+<h3 id="intensions">Intensions</h3>
+<p>We have considered pairs of sentences that differ by a constituent
+referring to the same thing, and established that even though they are
+true in the actual world, there are worlds in which one is true and the
+other is not. So the two subsets of possible worlds in which two
+sentences are true differ, and therefore can be used to discriminate
+between the two sentences.</p>
+<p>This is the intuition behind one possible solution to the puzzle:
+define content of words not as their referents, but as a function from a
+world to their referent in that world. This function is equivalently
+represented as the sets of structures for which the function is true
+(since the function can only take two values, <code>true</code> and
+<code>false</code>). Such a function is called <em>intension</em>
+(following Carnap), while the referent in a particular world is the
+<em>extension</em>.</p>
+<p>In <span class="citation" data-cites="winter_2016">Winter
+(2016)</span>’s formalism, possible worlds exist within a single
+structure. We add to the domain a set of worlds <span
+class="math inline">\(D_s\)</span>, called <em>indices</em>, and
+introduce the corresponding type <code>s</code>. The intension of a
+sentence is now called a <em>proposition</em> (of type <code>st</code>,
+mapping indices of type <code>s</code> to truth-values of type
+<code>t</code>). The intension of an entity is called an <em>individual
+concept</em> (of type <code>se</code>, mapping indices to individuals of
+type <code>e</code>). Without going into details, we can update our
+lambda-expressions systematically to support possible worlds.</p>
+<p>The theory is compatible with the previous one, in that it determines
+the same referents for the actual world as our previous theory. But the
+content of a constituent is a much richer object than its extension in
+the actual world: it can determine the extension of a constituent in all
+possible worlds.</p>
+<p>This solution also solves the second puzzle. The problem was that the
+content of a sentence was reduced to a single truth-value, either
+<code>true</code> or <code>false</code>. Thus, the content of ⌜Fran
+believes that T⌝ was identical for every true T. Now that we have
+introduced intensions, how is belief encoded in the structure? Let us
+note <span class="math inline">\(B\)</span> the belief relation in the
+structure corresponding to “believe that”. In each particular world
+<span class="math inline">\(W\)</span>, <span
+class="math inline">\(B(W)\)</span> is a (potentially different)
+relation between individuals <code>e</code> and propositions
+<code>st</code>, i.e., a subset of <span class="math inline">\(D_e
+\times (D_s \times D_t)\)</span>. The lambda-expression for “believes
+that” would consume a proposition <span class="math inline">\(S\)</span>
+of type <code>st</code> as input, and return a predicate of type
+<code>se(st)</code> as output, something like this:</p>
+<p><span class="math inline">\(\mathrm{believe} = \lambda S_{st}.\lambda
+I_{se}.\lambda W_s.(I(W),S) \in B(W)\)</span></p>
+<aside>
+The same modification can allow us to define worlds that change over
+time and place, to account for the circumstances of utterances in the
+determination of the truth. For example, the truth-value of “I was at my
+neighbour’s house yesterday” would have a different truth-value
+depending on the time and place of utterance. Time and place allows us
+to identify “I” and “my” uniquely, since only one person can be at a
+particular time and place at once. In this framework, propositions would
+be functions of type <code>(sxy)t</code> where <code>x</code> is the
+location type and <code>y</code> is the time type.
+</aside>
+<aside>
+The possible worlds framework also allows to handle ⌜It is possible that
+S⌝ and similar sentences elegantly, but this is not really the topic.
+</aside>
+<h2 id="content-as-structured-propositions">Content as structured
+propositions</h2>
+<p>Unfortunately, there is still a problem with necessary truths such as
+<span class="math inline">\(T_1\)</span>=“It is snowing or it is not
+snowing” and <span class="math inline">\(T_2\)</span>=“All students are
+students” (from <span class="citation" data-cites="cann_1993">Cann
+(1993)</span>, p.316). Our theory cannot distinguish between these
+sentences and they have the same intension, the set of all possible
+worlds. So if ⌜Bernard believes <span
+class="math inline">\(T_1\)</span>⌝ is true, then ⌜Bernard believes
+<span class="math inline">\(T_2\)</span>⌝ is also true, which is not a
+valid inference. Once again, our theory is too coarse-grained: it
+assigns the same content to sentences which mean different things.</p>
+<p>We can try to solve this problem without much efforts, by modifiying
+the support of the intension functions to include worlds in which some
+of these sentences are true and others are false. In particular,
+including logically impossible worlds could help us broaden the domain
+on which intensions are defined, thus discriminating between <span
+class="math inline">\(T_1\)</span> and <span
+class="math inline">\(T_2\)</span>. The second solution is more complex:
+redefine content as something else that can determine intension, but
+that is richer than intension; just like intension determines reference
+but cannot be reduced to it. This is the <em>structured proposition</em>
+approach. Finally, I will risk sharing some thoughts about a third
+possible approach where lambda-expressions could work as content.</p>
+<h3 id="possible-worlds-sensible-worlds-impossible-worlds">Possible
+worlds, sensible worlds, impossible worlds</h3>
+<p>“There are not enough worlds to differentiate the different
+statements from one another”, according to <span class="citation"
+data-cites="cann_1993">Cann (1993)</span>. But he already uses a broader
+set of possible worlds than other authors, for which things are even
+worse. <span class="citation" data-cites="sep-propositions">King
+(2019)</span>, for instance, exposes the problem above using different
+examples:</p>
+<blockquote>
+<p>For example, consider any pair of sentences that express
+metaphysically necessary propositions, say “Bachelors are unmarried” and
+“Brothers are male siblings”.</p>
+</blockquote>
+<p>The worlds in which these sentences are false are worlds where
+linguistic facts differ from ours. Whether these words should be
+considered possible or not is debatable. <span class="citation"
+data-cites="soames1987direct">Soames (1987)</span> talk about
+<em>metaphysically possible worlds</em> while <span class="citation"
+data-cites="cann_1993">Cann (1993)</span> talks about <em>sensible
+worlds</em> to denote worlds where language is used in the same way as
+it is in our world. To define sensible worlds, we can use <span
+class="citation" data-cites="carnap1952meaning">Carnap (1952)</span>’s
+<em>meaning postulates</em>, propositions that indicate how words are
+used in the actual world, rather similar to dictionary definitions. For
+example, the proposition expressed by the sentence “bachelors are
+unmarried men” is a meaning postulate. A world is <em>sensible</em> if
+the meaning postulates are true in this world. By contrast, a world in
+which “Rabbits are robots from Mars” (<span class="citation"
+data-cites="cann_1993">Cann (1993)</span>, p.277) is not sensible: it
+does not satisfy the meaning postulate encoding the fact that a rabbit
+is an animal, or that robots are machines, not animals.</p>
+<p>But as we have seen, our problem holds even when possible worlds
+include all worlds where the language is inconsistent with ours (in
+<span class="citation" data-cites="cann_1993">Cann (1993)</span>’s
+<em>possible worlds</em> or <span class="citation"
+data-cites="soames1987direct">Soames (1987)</span> <em>logically
+possible worlds</em>). A solution is to broaden the support of the
+intension function even further to include not only possible worlds, but
+also logically <a
+href="https://plato.stanford.edu/entries/impossible-worlds/">impossible
+worlds</a>. For instance, there would be an impossible world where the
+law of excluded middle does not hold, and therefore, “it is snowing or
+it is not snowing” would be false.</p>
+<aside>
+<ul>
+<li>We can see meaning postulates as the axioms of sensible worlds. Is
+there a restricted set of axioms that define possible worlds, then?
+Carnap’s <em>state-descriptions</em> would probably be the place to
+start.</li>
+<li>Barwise &amp; Perry use <em>abstract situations</em>: partially
+defined worlds. How does it solve the problem?</li>
+</ul>
+</aside>
+<p>In summary, by defining intensions over more and more worlds
+(logically possible or impossible worlds), intensions may become
+fine-grained enough.</p>
+<p>Proponents of structured propositions deny that this solution is
+satisfying. Let’s turn to their criticism and proposed solution.</p>
+<h3 id="structured-propositions">Structured propositions</h3>
+<p>Other solutions to the necessary truths problem can be grouped under
+the term <em>structured propositions</em>. <span class="citation"
+data-cites="sep-propositions">King (2019)</span> says:</p>
+<blockquote>
+<p>Roughly, to say that propositions are structured is to say that they
+are complex entities, entities having parts or constituents, where the
+constituents are bound together in a certain way. Thus, particular
+accounts of structured propositions can (and do) differ in at least two
+ways: 1) they can differ as to what sorts of things are the constituents
+of structured propositions; and 2) they can differ as to what binds
+these constituents together in a proposition.</p>
+</blockquote>
+<p>I am going to discuss the relatively popular neo-Russellian flavor of
+structured propositions as described by <span class="citation"
+data-cites="soames1987direct">Soames (1987)</span>.</p>
+<p>For Soames, we cannot salvage the view that content is intension,
+even when we use more than sensible worlds as support. He exhibits
+issues arising because of inferences based on <em>distribution over
+conjunction</em>: if ⌜Manny believes A and B⌝ is true, then ⌜Manny
+believes A⌝ and ⌜Manny believes B⌝ are true. Take the conjunction
+operator over propositions to be the intersection of the sets of
+possible worlds representing the two propositions. Then, the conjunction
+of a necessary true proposition and any proposition P is P. So for every
+necessary truth T and any sentence A, ⌜Manny says that A⌝ is true iff
+⌜Manny says that A and T⌝ is true. By distribution over conjunction,
+then, ⌜Manny says that T⌝ is true, which is not warranted. There is a
+similar problem for necessary false sentences F: if ⌜Manny says that F⌝
+is true, then, for every sentence B, ⌜Manny says that B and F⌝ is true,
+and by distribution over conjunction, then ⌜Manny says that B⌝ is true
+for every sentence B, which is absurd. In summary, Manny always says
+necessary truths whenever he says something (however non-trivial they
+are!) and cannot say necessary false statements.</p>
+<p>In addition, Soames is trying to accommodate <a
+href="https://en.wikipedia.org/wiki/Direct_reference_theory">direct
+reference theory</a>, (re?)popularized by Saul Kripke with “Naming and
+Necessity”. Without going into details (that I ignore), Kripke holds
+that proper and common nouns are <em>rigid designators</em>: they refer
+to the same individual in all possible worlds. Formally, there is no
+individual concept – or rather, individual concepts are constant
+functions. But as soon as we adopt this viewpoint, Frege’s puzzle comes
+back. In <span class="citation" data-cites="soames1987direct">Soames
+(1987)</span>’s original example ((9)), using our current theory,
+assuming the first sentence is true, the other sentences can be inferred
+in this order:</p>
+<ol type="1">
+<li>“The ancients believed that the evening star is Hesperus and that
+the morning star is Phosphorus”.</li>
+<li>“The ancients believed that the evening star is Hesperus and that
+the morning star is <em>Hesperus</em>”: Since “Hesperus” and
+“Phosphorus” are rigid designators which refer to a single object, both
+embedded clause in 1) and 2) are true in the same worlds, and therefore,
+they have the same content.</li>
+<li>“The ancients believed that the evening star is Hesperus and that
+the morning star is Hesperus <em>and that there is an x such that the
+evening star is x and the morning star is x</em>”: The set of possible
+worlds realizing the first embedded clause is included in that of the
+second clause. So the content of the conjunction, which is set
+intersection, is equal to the content of the first clause.</li>
+<li>“The ancients believed that there is an x such that the evening star
+is x and the morning star is x”: Distribution over conjunction.</li>
+</ol>
+<p>(I ignore subtleties related to using <em>definite descriptions</em>
+and assume “the evening star” only picks out an individual.) The problem
+is that the ancients did not know that “Hesperus” and “Phosphorus”
+referred to the same individual, but that is contradicted by 4).
+Therefore, we need to break this chain of inference. But which
+inference(s) is/are unwarranted?</p>
+<p>As Soames explains, the inference from the first to the second
+sentence is not that weird. Sentential and propositional attitudes
+should be treated differently. “Assert” and “believe” are relations
+between individuals and propositions. But “utter” and “say” are
+relations between individuals and <em>sentences</em>. This is different:
+the ancients would certainly not literally say that “the evening star is
+Hesperus and that the morning star is Hesperus”, but it is true that
+they believed so. (Is it simply wrong under a <em>de dicto</em>
+interpretation and correct under a <em>de re</em> interpretation?) As
+for the inference from 3) to 4), it simply comes from distribution over
+conjunction which seems intuitively correct. Therefore, the problem lies
+in the 2) to 3) inference.</p>
+<p>To make it illegal, Soames proposed two variants of the same idea:
+“structured Russellian propositions” and a simpler variant based on
+“truth-supporting circumstances”. The latter is minimalist: it just
+solves the paradox, nothing more. But Soames argues in section VII that
+it is less cognitively plausible, using again distributivity of
+conjunction. Therefore, let us only discuss the first variant. The
+approach boils down to defining content as follows:</p>
+<ul>
+<li>The content of a constituent is called a <em>propositional
+constituent</em>, and is either:
+<ul>
+<li>a tuple of individuals of the domain</li>
+<li>a propositional function, i.e., a function from the domain to
+propositions</li>
+<li>the intension of a relation</li>
+<li>truth-functions (as in propositional/boolean logic) NEG, CONJ, SOME,
+…</li>
+</ul></li>
+<li>The content of a sentence is called a (structured Russellian)
+proposition, and is a tuple of propositional constituents.</li>
+</ul>
+<p>For instance, “John does not run” would be represented as
+<code>&lt;NEG, &lt;&lt;J&gt;, Run&gt;&gt;</code>, where <code>J</code>
+is the entity directly denoted by “John”, and <code>Run</code> is the
+intension of “run”.</p>
+<p>To get back to our example, if the content of the clause of 2) is a
+proposition <code>P2</code> (not detailed here), whereas the content of
+the clause of 3) is the proposition
+<code>P3 = &lt;CONJ, &lt;P2, &lt;SOME, g&gt;&gt;&gt;</code>. That is,
+<code>P3</code> encodes the conjunction of <code>P2</code> and some
+other proposition <code>&lt;SOME, g&gt;</code> (where <code>g</code> is
+properly defined). Since <code>P2</code> and <code>P3</code> are
+different mathematical objects, the inference from 2) to 3) is
+invalid.</p>
+<p>Soames’ structured Russellian propositions are nested tuples, so they
+can be equivalently represented as trees. As Soames says:</p>
+<blockquote>
+<p>One of the striking features of Russellian propositions is that they
+encode a good deal of the syntactic structure of the sentences that
+express them. Sentences that are negations, conjunctions, or
+quantifications express propositions which are themselves negative,
+conjunctive, or quantificational in structure.</p>
+</blockquote>
+<p>Finally, note that other proposals for structured propositions seem
+quite similar. For example, <span class="citation"
+data-cites="cann_1993">Cann (1993)</span> summarizes Cresswell’s
+approach (p.317) as follows:</p>
+<blockquote>
+<p>For example, Cresswell (1985) develops some ideas of Rudolf Carnap
+and David Lewis by defining a structural concept of meaning which
+interprets the objects of belief and knowledge as combinations of the
+intension of a formula plus all the intensions of its component
+parts.</p>
+</blockquote>
+<p>It seems rather similar to Soames’ variant based on “truth-supporting
+circumstances” and essentially consists in (non-nested) tuples.</p>
+<h3 id="content-as-lambda-expression">Content as lambda-expression?</h3>
+<p>It is easy to forget that lambda-expressions denote functions, but
+are not the functions they denote. They are just strings, sequences of
+symbols. The distinction is not very clearly made in <span
+class="citation" data-cites="winter_2016">Winter (2016)</span>’s text,
+and actually, not very clear in this text either until now. It is
+pedantic in ordinary/informal maths, but can be useful in a text about
+semantics. And without this distinction, it is not clear why content as
+intension do not work! In fact, I think that if we take content to be
+the lambda-expression that represents intension, we avoid a lot of
+problems.</p>
+<p>A lambda-expression is finer-grained than an intension function:
+there are several lambda-expressions which represent the same function.
+The lambda-expression that computes the intension of the sentence
+“bachelors are unmarried” is <span class="math inline">\(\lambda
+i_s.\mathrm{bachelor}(i) \subset \neg \mathrm{married}(i)\)</span>. It
+is clearly different from that of “Brothers are male siblings” that
+could be something like <span class="math inline">\(\lambda
+i_s.\mathrm{brothers}(i) \subset \mathrm{male}(i) \times
+\mathrm{male}(i) ...\)</span>. Yet, both expressions represent an
+identical intension (using all sensible worlds): the constant true
+function <span class="math inline">\(i \mapsto 1\)</span>.</p>
+<p>Now if content is the lambda-expression, and not the denoted
+function, content is an expression from an intermediary language. The
+string representation of neo-Russellian propositions also obey strict
+syntactic rules too, from which we can recover the tuples. So the two
+solutions might be very similar.</p>
+<aside>
+<p>Maybe a parse tree of the lambda-expression would be even closer to
+Soames’ proposal.</p>
+<p>Maybe this is still too fine-grained a representation. In particular,
+we should probably prevent that any two different sentences have <a
+href="https://en.wikipedia.org/wiki/Lambda_calculus#Alpha_equivalence">α-equivalent</a>
+contents.</p>
+Finally, I haven’t really thought about whether it would work with
+direct reference theory.
+</aside>
+<h2 id="closing-thoughts">Closing thoughts</h2>
+<p>Linguists, philosophers and mathematicians have incrementally refined
+the notion of content/meaning in formal semantics: from reference, to
+intension, to structured propositions. The story does not end here, see
+<span class="citation" data-cites="sep-meaning">Speaks (2019)</span>’s
+section on <a
+href="https://plato.stanford.edu/entries/meaning/#FregSema">Fregean
+semantics</a>.</p>
+<p>Perhaps we could draw a parallel between the trajectories of neural
+NLP and formal semantics. Neural NLP used to represent sentences in
+single, large-dimensional vectors (bag-of-words embeddings, last hidden
+states of LSTM encoders), not unlike the infinite-dimensional binary
+vectors that represent intensions of sentences in formal semantics. But
+with ELMo and the transformer-based models that followed, neural NLP
+also shifted towards structured representations which share several
+characteristics with neo-Russellian structured propositions. For
+instance, BERT’s representations and neo-Russellian structured
+propositions both:</p>
+<ul>
+<li>grow with sentence length,</li>
+<li>encode information for all words (at least, content words for
+structured propositions),</li>
+<li>encode syntactic structure (<span class="citation"
+data-cites="jawahar2019does">Jawahar, Sagot, and Seddah
+(2019)</span>).</li>
+</ul>
+<p>Finally, I would like to share some naive thoughts, doubts and
+questions about the whole project.</p>
+<ul>
+<li><strong>philosophy and data</strong>: Because they don’t gather data
+systematically, philosophers might obsess over edge cases of the form ⌜X
+is Y⌝ and ⌜X believes Y⌝. They use puzzles from previous papers, and
+elicit new data from themselves. On the other hand, the NLP community
+gathers data more systematically and from different speakers (crawling
+the internet, crowdsourcing). Thus, it should be more varied and cover
+more linguistic phenomena. However, it is hard to know what types of
+inferences are correctly handled with metrics averaged over all
+datapoints. A middle ground would be to use large datasets with very
+fine-grained evaluation (where datapoints are also classified by
+sentence structure, inference type, etc.).</li>
+<li><strong>cognitive aspects</strong>: How could intensions – functions
+defined on infinite sets of worlds – be represented in memory and
+manipulated? I don’t think that they could be mental representations.
+I’d like to read cognitive linguists next.</li>
+<li><strong>goal and scope of the theory</strong>: The method becomes
+doubtful when we push it to the extreme. For instance, <span
+class="citation" data-cites="cann_1993">Cann (1993)</span> (p.317)
+proposes to differentiate between two sentences which differ only by the
+substitution of “jumper” with “pullover”. Is there a point in having
+representations that are so fine-grained? Moreover, if different
+sentences always have different meanings, however small their
+differences, it might not be the role of model-theoretic semantics to
+distinguish them. What about models of pragmatics? Can they encode <a
+href="https://www.aclweb.org/anthology/2020.acl-main.462/">construal
+meaning</a>?</li>
+<li><strong>criterion</strong>: The criterion used to evaluate and
+improve the theory is the following: the theory should assign
+truth-values to sentences correctly, i.e., truth-values matching the
+state of affairs defined by the structure. But truth-values are binary
+and lack nuances: should there be half-truths or undefined truths?</li>
+</ul>
+<h2 class="unnumbered" id="references">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent"
+role="doc-bibliography">
+<div id="ref-cann_1993" class="csl-entry" role="doc-biblioentry">
+Cann, Ronnie. 1993. <em>Formal Semantics: An Introduction</em>.
+Cambridge Textbooks in Linguistics. Cambridge University Press. <a
+href="https://doi.org/10.1017/CBO9781139166317">https://doi.org/10.1017/CBO9781139166317</a>.
+</div>
+<div id="ref-carnap1952meaning" class="csl-entry"
+role="doc-biblioentry">
+Carnap, Rudolf. 1952. <span>“Meaning Postulates.”</span>
+<em>Philosophical Studies</em> 3 (5): 65–73.
+</div>
+<div id="ref-frege1892sinn" class="csl-entry" role="doc-biblioentry">
+Frege, Gottlob. 1892. <span>“<span>Ü</span>ber Sinn Und
+Bedeutung.”</span> <em>Zeitschrift f<span>ü</span>r Philosophie Und
+Philosophische Kritik</em> 100: 25–50.
+</div>
+<div id="ref-jawahar2019does" class="csl-entry" role="doc-biblioentry">
+Jawahar, Ganesh, Benoı̂t Sagot, and Djamé Seddah. 2019. <span>“What Does
+BERT Learn about the Structure of Language?”</span> In <em>Proceedings
+of the 57th Annual Meeting of the Association for Computational
+Linguistics</em>, 3651–57.
+</div>
+<div id="ref-sep-propositions" class="csl-entry" role="doc-biblioentry">
+King, Jeffrey C. 2019. <span>“<span>Structured
+Propositions</span>.”</span> In <em>The <span>Stanford</span>
+Encyclopedia of Philosophy</em>, edited by Edward N. Zalta, Summer 2019.
+<a
+href="https://plato.stanford.edu/archives/sum2019/entries/propositions-structured/"
+class="uri">https://plato.stanford.edu/archives/sum2019/entries/propositions-structured/</a>;
+Metaphysics Research Lab, Stanford University.
+</div>
+<div id="ref-soames1987direct" class="csl-entry" role="doc-biblioentry">
+Soames, Scott. 1987. <span>“Direct Reference, Propositional Attitudes,
+and Semantic Content.”</span> <em>Philosophical Topics</em> 15 (1):
+47–87.
+</div>
+<div id="ref-sep-meaning" class="csl-entry" role="doc-biblioentry">
+Speaks, Jeff. 2019. <span>“<span class="nocase">Theories of
+Meaning</span>.”</span> In <em>The <span>Stanford</span> Encyclopedia of
+Philosophy</em>, edited by Edward N. Zalta, Winter 2019. <a
+href="https://plato.stanford.edu/archives/win2019/entries/meaning/"
+class="uri">https://plato.stanford.edu/archives/win2019/entries/meaning/</a>;
+Metaphysics Research Lab, Stanford University.
+</div>
+<div id="ref-winter_2016" class="csl-entry" role="doc-biblioentry">
+Winter, Yoad. 2016. <em>Elements of Formal Semantics: An Introduction to
+the Mathematical Theory of Meaning in Natural Language</em>. Edinburgh
+University Press.
+</div>
+</div>
+</body>
+</html>
