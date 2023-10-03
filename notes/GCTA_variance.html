@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>GCTA_variance</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <link rel="stylesheet" href="mine.css" />
+  <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"
+  type="text/javascript"></script>
+</head>
+<body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#the-inbreeding-coefficient">The inbreeding coefficient</a>
+<ul>
+<li><a href="#expected---observed-observed">Expected - observed /
+observed?</a></li>
+</ul></li>
+<li><a href="#a-useful-assumption">A useful assumption</a></li>
+<li><a
+href="#estimator-based-on-the-diagonal-of-the-snp-derived-grm">Estimator
+based on the diagonal of the SNP-derived GRM</a>
+<ul>
+<li><a href="#expectation">Expectation</a></li>
+</ul></li>
+<li><a href="#estimator-based-on-snp-homozygosity">Estimator based on
+SNP homozygosity</a>
+<ul>
+<li><a href="#plug-in-hatf">Plug-in <span
+class="math inline">\(\hat{F}\)</span></a></li>
+<li><a
+href="#inbreeding-coefficient-seen-as-a-prior-probability-in-a-latent-variable-model">Inbreeding
+coefficient seen as a prior probability in a latent variable
+model</a></li>
+</ul></li>
+<li><a
+href="#estimator-based-on-the-correlation-between-uniting-gametes">Estimator
+based on the correlation between uniting gametes</a>
+<ul>
+<li><a
+href="#but-also-it-is-the-average-of-the-two-other-estimators">But also
+it is the average of the two other estimators</a></li>
+<li><a href="#decomposition-in-indicator-functions">Decomposition in
+indicator functions</a></li>
+<li><a href="#covariance-of-the-2-first-estimators">Covariance of the 2
+first estimators</a></li>
+</ul></li>
+</ul>
+</nav>
+<p>Say you are 1m80 tall. How much of that is due to your genetics?
+Heritability studies try to measure the proportion of the variance in
+height observed in a population that is explained by genetic variations.
+It can be used to investigate any quantitative (continuous) traits like
+political opinions, IQ, sexuality, etc.</p>
+<p>GCTA is a simple mixed linear model to compute some specific
+<em>narrow-sense</em> or <em>additive</em> heritabillity. The first part
+of the estimation procedure is about quantifying the genetic similarity
+of each pair of individuals. In these notes I write down what I wish
+were more detailed in the GCTA papers about this procedure. These notes
+are not self-contained.</p>
+<p>They’re mostly based on:</p>
+<ul>
+<li><a href="https://pubmed.ncbi.nlm.nih.gov/20562875/">Common SNPs
+explain a large proportion of the heritability for human height, Yang
+&amp; al. 2010</a></li>
+<li><a
+href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3014363/">GCTA: A
+Tool for Genome-wide Complex Trait Analysis, Yang &amp;
+al. 2011</a></li>
+<li><a href="https://pubmed.ncbi.nlm.nih.gov/13065259/">Some methods of
+estimating the inbreeding coefficient, Li and Horvitz 1953</a></li>
+</ul>
+<p>Things I’ve learned:</p>
+<ul>
+<li>The inbreeding coefficient <span class="math inline">\(F\)</span>
+can be estimated in many ways, and so conceptualized in many ways.</li>
+<li>In the GCTA paper, the estimators are written as polynomials of the
+counts of alleles <span class="math inline">\(X\)</span>… but they’re
+just linear combination of indicator functions which are 1 for each
+different values of counts (0, 1 or 2). This simplifies calculations of
+variance a lot, for instance.</li>
+<li>In stats genetics, many quantities are “observed over expected
+ratios”. The expected is not a mathematical expectation but a prediction
+according to some more or less simple model (much like a null
+hypothesis).</li>
+</ul>
+<h1 id="the-inbreeding-coefficient">The inbreeding coefficient</h1>
+<p>The diagonal terms of the naive (first) estimator of the GRM have
+expectation <span class="math inline">\(1+F\)</span> where <span
+class="math inline">\(F\)</span> is the inbreeding coefficient. What is
+<span class="math inline">\(F\)</span>? There are different definitions
+of inbreeding coefficients, so it can be confusing. Here we are talking
+about a <em>population-level</em> inbreeding coefficient for a
+<em>single</em> gene. (The inbreeding coefficient can then be averaged
+over all genes. There are alternative definitions of inbreeding at the
+<em>individual-level</em>, considering many genes in a single
+individual.)</p>
+<p>Let <span class="math inline">\(X\)</span> be a random variable
+modelling the allele counts of a given SNP. For a diploid individual and
+a SNP with 2 alleles A and a, it can take values 0 (for aa), 1 (for aA
+and Aa) and 2) (for AA). We consider two different probability
+distributions for this variable, encoding different assumptions about
+mating behavior.</p>
+<ul>
+<li>Null model: Under the <a
+href="https://en.wikipedia.org/wiki/Hardy%E2%80%93Weinberg_principle">Hardy-Weinberg
+hypotheses</a>, <span class="math inline">\(X \sim Bin(2, p_0)\)</span>.
+The expected fraction of heterozygous allele counts is just the sum of
+probability of sampling Aa <span
+class="math inline">\(p_0(1-p_0)\)</span> + that of sampling aA <span
+class="math inline">\((1-p_0)p_0\)</span>, that is <span
+class="math inline">\(2p_0(1-p_0)\)</span>. We note <span
+class="math inline">\(h = 2p_0(1-p_0)\)</span>.</li>
+<li>Alternative model: without any assumptions, <span
+class="math inline">\(X\)</span> is distributed according to a
+categorical distribution with probabilities <span
+class="math inline">\(f_0, f_1, f_2\)</span>. By definition, the
+fraction of heterozygous allele counts is <span
+class="math inline">\(f_1\)</span>.</li>
+</ul>
+<p><span class="math inline">\(F\)</span> is the deviation of the
+prediction of the number of heterozygous alleles in the alternative
+model (<span class="math inline">\(f_1\)</span>) from that of the null
+model (<span class="math inline">\(h\)</span>). It is normalized by
+<span class="math inline">\(h\)</span>. That is, <span
+class="math inline">\(F = \frac{h - f_1}{h}\)</span>. This normalisation
+by <span class="math inline">\(h\)</span> seems slightly arbitrary. One
+of the estimators presented below can help us understand it.</p>
+<h2 id="expected---observed-observed">Expected - observed /
+observed?</h2>
+<p>It is also commonly defined as <span class="math inline">\(\frac{E -
+O}{E}\)</span> where <span class="math inline">\(E\)</span> stands for
+expectation and <span class="math inline">\(O\)</span> observed:</p>
+<ul>
+<li><span class="math inline">\(F\)</span> is a function of the unknown
+true parameters of the alternative model (<span
+class="math inline">\(f_1\)</span>). So when we define <span
+class="math inline">\(F\)</span> in terms of observations, we’re already
+conflating the definition in terms of parameters versus the estimators.
+Maybe confusing.</li>
+<li>“Expectation”: the null model is parametrised so that the
+heterozygous allele count is not directly a parameter, but a function of
+the single parameter <span class="math inline">\(p_0\)</span>. It is not
+an expectation in the probabilistic sense of the term, but the predicted
+count <span class="math inline">\(P(X=1)\)</span> according to the null
+model. It is an “expectation” in the sense that it is what we would
+<em>expect, were the HW conditions true</em>.</li>
+<li>“Observation”: in the alternative model, <span
+class="math inline">\(f_1\)</span> can be estimated easily and reliably
+using the empirical mean over individuals <span
+class="math inline">\(\hat{f_1}\)</span>. This empirical mean uses the
+“observations”.</li>
+</ul>
+<h1 id="a-useful-assumption">A useful assumption</h1>
+<p>The expectations and variances of the estimators are calculated using
+one important assumption: that the marginal allele probabilities <span
+class="math inline">\(p_i\)</span> of the allele A of SNP <span
+class="math inline">\(i\)</span> is known. In reality, they are not
+known but well estimated by their empirical frequencies. So for a given
+SNP <span class="math inline">\(i\)</span>, <span
+class="math inline">\(p_i \approx \hat{p_i} = \frac{1}{2n} Σ_j
+x_{ij}\)</span> (where <span class="math inline">\(n\)</span> is the
+number of individuals). Why can we assume so?</p>
+<ol type="1">
+<li><span class="math inline">\(p_i\)</span> is estimated on all
+individuals (usually, a large number).</li>
+<li>(not sure about that) when estimating such a probability from count
+data, the more the probability is close to 0.5, the less variance there
+is in the empirical mean (for a binomial variable it is <span
+class="math inline">\(np(1-p)\)</span>). Genotyped SNPs should be chosen
+to be relatively informative (=high entropy)? Then the estimates of the
+allele probabilities should be relatively low variance, compared to a
+randomly chosen SNP?</li>
+</ol>
+<h1
+id="estimator-based-on-the-diagonal-of-the-snp-derived-grm">Estimator
+based on the diagonal of the SNP-derived GRM</h1>
+<p>The diagonal term of the GRM <span
+class="math inline">\(A_jj\)</span> is the average over SNPs (<span
+class="math inline">\(i\)</span>) of <span class="math inline">\(A_{ijj}
+= \frac{(X_{ij} - 2p_i)²}{h_i}\)</span> (<span
+class="math inline">\(i\)</span> is the SNP index, <span
+class="math inline">\(j\)</span> the individual index). Let’s omit the
+indices.</p>
+<p>It is presented as being “based on the variance of additive genetic
+values”, because it is a variance term (we assumed above that <span
+class="math inline">\(E[X]=2p\)</span> is known) and “additive” because
+<span class="math inline">\(X\)</span> are sum of allele counts.</p>
+<h2 id="expectation">Expectation</h2>
+<p><span class="math display">\[\begin{align}
+E[A_{ijj}] &amp;= E[\frac{(X - 2p)²}{h}] \\
+           &amp;= \frac{1}{h} E[(X - 2p)²] &amp;&amp;\text{because $h$
+fixed and known}\\
+           &amp;= \frac{1}{h} E[{X}² - 4p X + 4p²] \\
+           &amp;= \frac{1}{h} (E[{X}²] - 4p E[X] + 4p²) \\
+\end{align}\]</span></p>
+<p>By definition,</p>
+<ul>
+<li><span class="math inline">\(E[X] = f_0 \times 0 + f_1 \times 1 + f_2
+\times 2 = f_1 + 2f_2\)</span>,</li>
+<li><span class="math inline">\(E[X^2] = f_0 \times 0 + f_1 \times 1² +
+f_2 \times 2² = f_1 + 4f_2\)</span>.</li>
+</ul>
+<p>Moreover, by assumption the parameter <span
+class="math inline">\(p\)</span> is estimated without error, using <span
+class="math inline">\(2 p = E[X]\)</span>. So we have <span
+class="math inline">\(2 p = f_1 + 2f_2\)</span>. We want to express the
+expectation as a function of <span class="math inline">\(f_1\)</span>
+and <span class="math inline">\(h\)</span>, so we eliminate all <span
+class="math inline">\(f_2\)</span> terms using <span
+class="math inline">\(f_2 = p - f_1 / 2\)</span>.</p>
+<p><span class="math display">\[\begin{align}
+E[A_{ijj}] &amp;= \frac{1}{h} ((f_1 + 4 f_2) - 4p (f_1 + 2f_2) + 4 p²)
+\\
+           &amp;= \frac{1}{h} ((f_1 + 4 p - 2 f_1) - 4p (f_1 + 2 p -
+f_1) + 4p²) \\
+           &amp;= \frac{1}{h} ((-f_1 + 4 p) - 4p (2 p) + 4p²) \\
+           &amp;= \frac{1}{h} ((-f_1 + 4 p) - 4 p²) \\
+           &amp;= \frac{1}{h} (4p(1 - p) - f_1) \\
+           &amp;= \frac{2 h - f_1}{h} \\
+           &amp;= 1 + \frac{h - f_1}{h} \\
+           &amp;= 1 + F \\
+\end{align}\]</span></p>
+<p>So <span class="math inline">\(A_{ijj} - 1 = \frac{(X_{ij} - 2p_i)^2
+- h_i}{h_i}\)</span> is an estimator of <span
+class="math inline">\(F\)</span>.</p>
+<h1 id="estimator-based-on-snp-homozygosity">Estimator based on SNP
+homozygosity</h1>
+<h2 id="plug-in-hatf">Plug-in <span
+class="math inline">\(\hat{F}\)</span></h2>
+<p>We can estimate <span class="math inline">\(F = \frac{h -
+f_1}{h}\)</span>:</p>
+<ul>
+<li><span class="math inline">\(h=2 p (1-p)\)</span> but we assume that
+<span class="math inline">\(p\)</span> is known without variance, so we
+know <span class="math inline">\(h\)</span>.</li>
+<li>An estimator of <span class="math inline">\(f_1\)</span> is simply
+<span class="math inline">\(\mathbf{1}_{x=1}(x)\)</span>, notation for
+the indicator function that is <span class="math inline">\(1\)</span>
+where <span class="math inline">\(x=1\)</span> and <span
+class="math inline">\(0\)</span> elsewhere.
+<ul>
+<li>This indicator function is equal to <span
+class="math inline">\((2-x)x\)</span> (on <span
+class="math inline">\(\{0, 1, 2\}\)</span> !!!)… It took me a
+surprisingly long time to see that… I don’t know why this notation is
+preferred.</li>
+<li>We plug it in the expression of <span
+class="math inline">\(F\)</span> to get an estimator of <span
+class="math inline">\(F\)</span>.</li>
+</ul></li>
+</ul>
+<p>So <span class="math inline">\(\frac{h - \mathbf{1}_{x=1}(X)}{h} =
+\frac{h - (2-X)X}{h}\)</span> is an estimator of <span
+class="math inline">\(F\)</span>.</p>
+<h2
+id="inbreeding-coefficient-seen-as-a-prior-probability-in-a-latent-variable-model">Inbreeding
+coefficient seen as a prior probability in a latent variable model</h2>
+<p>Another way to obtain this is presented in Li &amp; Horvitz. Consider
+these 2 models:</p>
+<ul>
+<li>The same null model as before: <span class="math inline">\(X \sim
+Bin(n=2, p_0)\)</span> (“Model I” in Li &amp; Horvitz)
+<ul>
+<li>It has a single unknown parameter <span
+class="math inline">\(p_0\)</span>.</li>
+<li>The probability of observing heterozygous alleles is <span
+class="math inline">\(p(X=1) = 2 p_0 (1-p_0)\)</span>.</li>
+</ul></li>
+<li>A model with a binary latent variable (say, <span
+class="math inline">\(Y\)</span>) which is 1 when inbreeding has
+occured, 0 otherwise. The model factorizes as <span
+class="math inline">\(q(X) = q(Y=0)q(X|Y=0) + q(Y=1) q(X|Y=1)\)</span>.
+(“Model II” in Li &amp; Horvitz)
+<ul>
+<li>This model switches between two behaviors.</li>
+<li>In particular, let’s look at <span
+class="math inline">\(X=1\)</span>. When there is no inbreeding (<span
+class="math inline">\(Y=0\)</span>), the alleles are sampled
+independently from the gene pool. <span
+class="math inline">\(X=1\)</span> if we sample both alleles one time,
+so we have <span class="math inline">\(q(X=1|Y=0) = 2 p_0&#39;
+(1-p_0&#39;)\)</span>.</li>
+<li>When there is inbreeding (<span class="math inline">\(Y=1\)</span>),
+a single allele is sampled and duplicated, so we cannot observe aA or
+Aa, so <span class="math inline">\(q(X=1|Y=1) = 0\)</span>.</li>
+<li><span class="math inline">\(q(X=1) = q(Y=0) q(X=1|Y=0) + q(Y=1)
+q(X=1|Y=1) =\\ q(Y=0) q(X=1|Y=0) = (1 - F) 2 p_0&#39;
+(1-p_0&#39;)\)</span>.</li>
+</ul></li>
+</ul>
+<p>To go forward in the derivation of the estimator, we want to express
+the parameter <span class="math inline">\(p_0\)</span> as a function of
+the other <span class="math inline">\(p_0&#39;\)</span> (or vice versa).
+I’m not sure what this means to think of the true parameters being a
+function of each other… However, we can estimate both <span
+class="math inline">\(p_0\)</span> and <span
+class="math inline">\(p_0&#39;\)</span> using the same estimator.
+Indeed, for the first model, <span class="math inline">\(E[X] = 2
+p_0\)</span> so we can estimate <span class="math inline">\(p_0\)</span>
+using <span class="math inline">\(\hat{p_0} = \bar{X}/2\)</span> where
+<span class="math inline">\(\bar{X}\)</span> is the empirical mean. For
+the second model, the parameter <span
+class="math inline">\(p_0&#39;\)</span> can be estimated in the same
+way, since:</p>
+<p><span class="math display">\[\begin{align}
+E[X] &amp;= E[E[X|Y]] \\
+     &amp;= F E[X|Y=0] + (1-F) E[X|Y=1] \\
+     &amp;= F (2 p_0&#39;) + (1-F) (2 p_0&#39;) \\
+     &amp;= 2 p_0&#39; \\
+\end{align}\]</span></p>
+<p>Now if we use <span class="math inline">\(\hat{p_0}\)</span> as an
+estimator both for <span class="math inline">\(p_0\)</span> and <span
+class="math inline">\(p_0&#39;\)</span> and express the likelihoods
+using the estimate, we get:</p>
+<ul>
+<li><span class="math inline">\(q(X=1|\hat{p_0}) = (1 - F) 2 \hat{p_0}
+(1 - \hat{p_0}) = (1 - F) p(X=1|\hat{p_0})\)</span></li>
+<li>so <span class="math inline">\(1 - F = q(X=1|\hat{p_0}) /
+p(X=1|\hat{p_0})\)</span></li>
+<li>so <span class="math inline">\(F = 1 - q(X=1|\hat{p_0}) /
+p(X=1|\hat{p_0})\)</span></li>
+</ul>
+<p>Then:</p>
+<ul>
+<li><span class="math inline">\(p(X=1|\hat{p_0}) = h\)</span> (again, we
+assume <span class="math inline">\(\hat{p_0} = p_0\)</span>),</li>
+<li><span class="math inline">\(q(X=1|\hat{p_0}) =
+E[1_{x=1}(X)]\)</span> so we approximate it using the indicator function
+directly.</li>
+</ul>
+<p>We see that the inbreeding coefficient <span
+class="math inline">\(F\)</span> can also be defined as some prior
+probability of inbreeding <span class="math inline">\(F =
+q(Y=1)\)</span>!</p>
+<p>Taking a step back, what did we just do here? We have two models that
+differ slightly. We have parameters that can be estimated easily (<span
+class="math inline">\(p_0\)</span> and <span
+class="math inline">\(p_0&#39;\)</span>), and a parameter, <span
+class="math inline">\(F\)</span>, that is harder to estimate. We write
+down some probabilities according to these 2 models. It doesn’t need to
+be the probability of the same event for the 2 models! But here it’s
+convenient to use the predictions of <span
+class="math inline">\(X=1\)</span>, because they differ only by a factor
+<span class="math inline">\(1-F\)</span>. We then plug-in the estimators
+we already have. The estimators also don’t need to be the same, as is
+the case here, as long as they’re related by a mathematical function
+(they’re just functions of the sample), and as long as the parameter of
+interest appears in one of them. Then we can massage the expression to
+find an estimator for the parameter of interest… Maybe this is a
+well-known method but I had never seen that.</p>
+<h1
+id="estimator-based-on-the-correlation-between-uniting-gametes">Estimator
+based on the correlation between uniting gametes</h1>
+<p>Let <span class="math inline">\(B_1\)</span> and <span
+class="math inline">\(B_2\)</span> be random variables representing the
+alleles of the male and female gametes. By definition, <span
+class="math inline">\(X\)</span> is the allele count, that is <span
+class="math inline">\(X = B_1 + B_2\)</span>. The two gametes fuse to
+produce the zygote. <span class="math inline">\(B_1=1\)</span> if the
+male gamete contains allele A, else it is 0; and similarly for <span
+class="math inline">\(B_0\)</span>. The correlation between these
+is:</p>
+<p><span class="math display">\[\begin{align}
+Cov(B_1, B_2) &amp;= E[(B_1 - p)(B_2 - p)] \\
+              &amp;= E[B_1 B_2] - pE[B_1 + B_2] + p^2 \\
+              &amp;= E[B_1 B_2] - pE[X] + p^2 \\
+\end{align}\]</span></p>
+<p>Because of the way we have coded the alleles as integers in <span
+class="math inline">\(B_1\)</span>, <span
+class="math inline">\(B_2\)</span> and <span
+class="math inline">\(X\)</span>, we have that <span
+class="math inline">\(B_1 B_2 = 1\)</span> if and only if <span
+class="math inline">\(X=2\)</span>. Again, we can express the estimator
+function <span class="math inline">\(1_{x=2}(x) = x(x-1) / 2\)</span>
+for all <span class="math inline">\(x \in \{0, 1, 2\}\)</span>. So an
+estimator of this is simply</p>
+<p><span class="math display">\[\begin{align}
+\hat{Cov}(B_1, B_2) &amp;= X(X-1)/2 - pX + p^2 \\
+\end{align}\]</span></p>
+<p>To obtain the correlation, we divide by the std deviation of <span
+class="math inline">\(B_1\)</span> times std deviation of <span
+class="math inline">\(B_2\)</span>. We have <span
+class="math inline">\(Var[B_1] = E[B_1²] - E[B_1]² = p - p² = p(1-p) =
+h/2\)</span>, and similarly for <span
+class="math inline">\(Var[B_2]\)</span>. So the denominator is <span
+class="math inline">\(\sqrt{Var[B_1] Var[B_2]} = h/2\)</span>.</p>
+<p>So the estimator for the correlation is:</p>
+<p><span class="math display">\[\begin{align}
+\hat{Corr}(B_1, B_2) &amp;= \frac{X(X-1)/2 - pX + p^2}{h/2} \\
+                     &amp;= \frac{X(X-1) - 2pX + 2p^2}{h} \\
+                     &amp;= \frac{X^2 - X(1 + 2p) + 2p^2}{h} \\
+\end{align}\]</span></p>
+<h2 id="but-also-it-is-the-average-of-the-two-other-estimators">But also
+it is the average of the two other estimators</h2>
+<p>I was surprised by that. The variance of an estimator of <span
+class="math inline">\(F\)</span> is a function of the true parameter
+<span class="math inline">\(p\)</span>. Both the first and second
+estimators have a similar variance in terms of <span
+class="math inline">\(p\)</span>: to simplify, assuming that <span
+class="math inline">\(F\)</span> is 0 (because we expect it to be small
+anyways), both variances are equal to <span
+class="math inline">\((1-h)/h\)</span>. The variance is 1 in <span
+class="math inline">\(p=0.5\)</span>, but rises as <span
+class="math inline">\(p\)</span> goes close to 0 or 1. So the two
+estimators are roughly equivalent even in particular regions of <span
+class="math inline">\(p\)</span>; it is not the case that one of them
+especially shines for low <span class="math inline">\(p\)</span>, for
+example.</p>
+<p>Yet when we average them, they give us a variance of <span
+class="math inline">\(1\)</span> everywhere. That’s because they’re
+anti-correlated below 0.2 and above 0.8, where the variance of the
+individual estimators is very high (see below).</p>
+<h2 id="decomposition-in-indicator-functions">Decomposition in indicator
+functions</h2>
+<p>On <span class="math inline">\(x \in \{0, 1, 2\}\)</span>, we
+have:</p>
+<ul>
+<li><span class="math inline">\(\mathbf{1}_{x=0}(x) =
+(x-1)(x-2)/2\)</span></li>
+<li><span class="math inline">\(\mathbf{1}_{x=1}(x) =
+x(2-x)\)</span></li>
+<li><span class="math inline">\(\mathbf{1}_{x=2}(x) =
+x(x-1)/2\)</span></li>
+</ul>
+<p>The numerators of the estimators are polynomials of degree 2, like
+those indicator functions. So these numerators can be written as linear
+combination of these indicator functions: <span class="math inline">\(a
+\mathbf{1}_{x=0}(x) + b \mathbf{1}_{x=1}(x) + c \mathbf{1}_{x=2}(x) +
+d\)</span>.</p>
+<p>The 2nd estimator’s numerator is just <span class="math inline">\(h -
+\mathbf{1}_{x=1}\)</span>, so <span class="math inline">\(a=c=0\)</span>
+and <span class="math inline">\(b=-1\)</span>.</p>
+<p>It is not surprising that <span class="math inline">\(b\)</span> is
+negative: when we count <span class="math inline">\(X=1\)</span>, it
+means we have observed 2 different alleles, which is impossible with
+inbreeding. So the estimate of <span class="math inline">\(F\)</span>
+should decrease compared to the baseline level <span
+class="math inline">\(d\)</span>.</p>
+<p>Moreover, the second estimate is the same whether <span
+class="math inline">\(X=0\)</span> and <span
+class="math inline">\(X=2\)</span>. It does not use all the available
+information, so it is expected that it doesn’t perform amazingly?</p>
+<p>What about the 1st estimator? Can this decomposition help us
+understand how it works intuitively? Does the first estimator use
+information about <span class="math inline">\(X=0\)</span> and <span
+class="math inline">\(X=2\)</span>?</p>
+<p>Let’s factorize the numerator of the first estimator into a linear
+combination of the indicator functions. This numerator is <span
+class="math inline">\((X-2p)² - h = X² × (\color{red}{1}) + X ×
+(\color{blue}{-4p}) + (4p² - h)\)</span>. We decompose it into:</p>
+<p><span class="math display">\[\begin{align}
+\mathrm{numerator} &amp;= a \mathbf{1}_{x=0}(X) + b \mathbf{1}_{x=1}(X)
++ c \mathbf{1}_{x=2}(X) + d \\
+  &amp;= a (X²/2 - 3X/2 + 1) + b (-X² + 2X) + c (X²/2 - X/2) + d \\
+  &amp;= X² × (\color{red}{a/2 - b + c/2}) + X × (\color{blue}{-3a/2 +
+2b - c/2}) + 1 × (a + d) \\
+\end{align}\]</span></p>
+<p>Identifying the 2, we have only 3 equations, but 4 unknowns <span
+class="math inline">\(a, b, c, d\)</span>. However, to simplify the
+interpretation of the coefficients, we can set <span
+class="math inline">\(a = -c\)</span>: we want the counts of <span
+class="math inline">\(X=0\)</span> and <span
+class="math inline">\(X=2\)</span> to act in an opposite direction with
+regards to some baseline level <span
+class="math inline">\(d\)</span>.</p>
+<p>Then, using the <span class="math inline">\(X²\)</span> factors, we
+identify and obtain <span class="math inline">\(\color{red}{a/2 - b -
+a/2 = 1}\)</span> so <span class="math inline">\(b = -1\)</span>. This
+is the same as for the second estimator.</p>
+<p>Furthermore, using the factors of <span
+class="math inline">\(X\)</span>, we get <span
+class="math inline">\(\color{blue}{-3a/2 + 2b + a/2 = -4p}\)</span>,
+that is <span class="math inline">\(-a + 2b = -4p\)</span> so <span
+class="math inline">\(a = 2b + 4p = -2 + 4p = 2(2p - 1)\)</span> And
+<span class="math inline">\(c = -a = 2(1 - 2p)\)</span>.</p>
+<p>Why does it make sense that <span class="math inline">\(c = 2(1 -
+2p)\)</span>? When <span class="math inline">\(p≈0\)</span>, <span
+class="math inline">\(c≈2\)</span>. Thus, observing <span
+class="math inline">\(X=2\)</span> bumps the numerator of <span
+class="math inline">\(\hat{F}\)</span> by around <span
+class="math inline">\(2\)</span>. Why? When <span
+class="math inline">\(p\)</span> is low, observing <span
+class="math inline">\(X=2\)</span> is very unlikely, but <strong>even
+more so</strong> if the alleles are sampled independently (without
+inbreeding). So this is very likely due to inbreeding, where the allele
+is sampled once and copied. Similarly, when <span
+class="math inline">\(p\)</span> is close to <span
+class="math inline">\(1\)</span>, observing <span
+class="math inline">\(X=0\)</span> increases our estimation of
+inbreeding.</p>
+<h2 id="covariance-of-the-2-first-estimators">Covariance of the 2 first
+estimators</h2>
+<p>It is a complete mess to calculate the covariance between estimators
+using the polynomial notations… but when we use the decomposition in
+indicator function, everything is much simpler since many products of
+indicators cancel out.</p>
+<p><span class="math display">\[\begin{align}
+Cov(\hat{F_1}, \hat{F_2}) &amp;= E[\hat{F_1}, \hat{F_2}] -
+E[\hat{F_1}]E[\hat{F_2}] \\
+                          &amp;= E[\hat{F_1}, \hat{F_2}] - F² \\
+\end{align}\]</span></p>
+<p><span class="math display">\[\begin{align}
+E[\hat{F_1} \hat{F_2}] &amp;= \frac{1}{h²} E[(h - \mathbf{1}_{x=1}(X))(a
+\mathbf{1}_{x=0}(X) - \mathbf{1}_{x=1}(X) - a \mathbf{1}_{x=2}(X) + d)]
+\\
+                       &amp;= \frac{1}{h²} [h [a f_0 - f_1 - a f_2 + d]
+- E[\mathbf{1}_{x=1}(X) (a \mathbf{1}_{x=0}(X) - \mathbf{1}_{x=1}(X) - a
+\mathbf{1}_{x=2}(X) + d)]] \\
+                       &amp;= \frac{1}{h²} [h [a f_0 - f_1 - a f_2 + d]
+- E[- \mathbf{1}_{x=1}(X) - \mathbf{1}_{x=1}(X) d]] &amp;&amp;
+\text{$\mathbf{1}_{x=1}(X) \mathbf{1}_{x=2}(X) = 0$, ...}\\
+                       &amp;= \frac{1}{h²} [h [a (1 - f_1 - f_2) - f_1 -
+a f_2 + d] - E[- \mathbf{1}_{x=1}(X) + \mathbf{1}_{x=1}(X) d]] \\
+                       &amp;= \frac{1}{h²} [h [a - f_1 - af_1 - 2af_2 +
+d] - (- f_1 + f_1 d)] \\
+                       &amp;= \frac{1}{h²} [h [a - f_1 - a(2p) + d] +
+f_1(1 - d)] \\
+                       &amp;= \frac{1}{h²} [h [4p - 2 - f_1 - 8p² + 4p
+-3h + 2] + f_1(3h - 1)] &amp;&amp; \text{$d=-3h+2$, $a=4p-2$}\\
+                       &amp;= \frac{1}{h²} [h [4p - 2 - f_1 - 8p² + 4p
+-6p + 6p² + 2] + f_1(3h - 1)] \\
+                       &amp;= \frac{1}{h²} [h [-2p² + 2p - f_1] + f_1(3h
+- 1)] \\
+                       &amp;= \frac{1}{h²} [h (h - f_1) + f_1(3h - 1)]
+\\
+                       &amp;= \frac{h-f_1}{h} + \frac{1}{h²}(f_1(3h -
+1)) \\
+                       &amp;= F + \frac{1}{h²}(f_1(3h - 1)) \\
+                       &amp;= F + \frac{3h - 1}{h}\frac{f_1}{h} \\
+                       &amp;= F + \frac{3h - 1}{h} + \frac{3h -
+1}{h}(\frac{f_1}{h} - 1) \\
+                       &amp;= F + \frac{3h - 1}{h} + \frac{3h -
+1}{h}F \\
+                       &amp;= F(1 - \frac{3h - 1}{h}) + \frac{3h -
+1}{h}\\
+                       &amp;= F\frac{1 - 2h}{h} + \frac{3h - 1}{h}\\
+\end{align}\]</span></p>
+<p>So we recover the paper’s statement that</p>
+<p><span class="math display">\[\begin{align}
+Cov(\hat{F_1}, \hat{F_2}) &amp;= \frac{3h - 1}{h} + F\frac{1 - 2h}{h} -
+F² \\
+\end{align}\]</span></p>
+<p>We can set <span class="math inline">\(F=0\)</span> to simplify. The
+first term drops very low below 0 as <span
+class="math inline">\(p\)</span> goes to 0 or 1, which is why the
+average estimator is low variance in these regions where each estimator
+is very high variance.</p>
+</body>
+</html>
