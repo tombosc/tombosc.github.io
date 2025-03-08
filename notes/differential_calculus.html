@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>differential_calculus</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <link rel="stylesheet" href="mine.css" />
+  <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"
+  type="text/javascript"></script>
+</head>
+<body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a
+href="#one-hidden-layer-multi-layer-perceptron-with-mse-loss">One-hidden
+layer multi-layer perceptron with MSE loss</a></li>
+<li><a href="#parameter-updates">Parameter updates</a></li>
+</ul>
+</nav>
+<p>Backpropagation is usually proved by using the chain rule on partial
+derivatives. However, it often gets hairy (see <a
+href="https://sebastianraschka.com/faq/docs/backprop-arbitrary.html">an
+example here</a>). I am not blaming the author here, I just find it hard
+to follow and confusing, because there are indices everywhere, and we
+need to remember the dimensions of the tensors, and that partial
+derivatives store information in the “transpose of the dimensions”,
+etc.</p>
+<p>Instead we can use <strong>differential calculus</strong>. Tom
+Minka’s <a
+href="https://tminka.github.io/papers/matrix/minka-matrix.pdf">notes</a>
+on differential calculus have been circulating for a long time; but
+looking at them felt daunting, there seems to be so many weird formulas
+to remember. Only recently, I went through Magnus and Neudecker,
+especially the free <a
+href="https://www.janmagnus.nl/misc/mdc-ch18.pdf">Chapter 18</a> which
+is a great intro and summary. It started to feel less like rote
+learning, and more usable to me. There is a steeper learning curve but
+it is surely more powerful and less error-prone, once one is used to it.
+Here I give a very small example to show that you need very little
+knowledge to work with small neural networks. Please read Chapter 18 for
+all the details; this is not self-contained.</p>
+<p>M&amp;D motivate the differential calculus approach:</p>
+<blockquote>
+<p>Now we can see the advantage of working with differentials rather
+than with derivatives. When we have an m × 1 vector y, which is a
+function of an n × 1 vector of variables x, say y = f (x), then the
+derivative is an m× n matrix, but the differential dy or df remains an m
+× 1 vector. […] The practical advantage of working with differentials is
+therefore that the order does not increase but always stays the
+same.</p>
+</blockquote>
+<p>In our deep learning case, we have a loss (scalar) and parameters
+which are vectors or matrices. We only care about parameter updates
+given by the partial derivatives of that loss wrt those vectors or
+matrices, which are either vectors or matrices. But the intermediary
+computations with the naive approach involve computing partial
+derivatives of matrices wrt matrices :( Here those intermediary
+computations will be written only as “differentials”.</p>
+<h1
+id="one-hidden-layer-multi-layer-perceptron-with-mse-loss">One-hidden
+layer multi-layer perceptron with MSE loss</h1>
+<p>Suppose we have a one-hidden layer MLP, and want to compute gradients
+of the MSE loss with regards to parameters <span
+class="math inline">\(A\)</span> and <span
+class="math inline">\(C\)</span>:</p>
+<ul>
+<li><span class="math inline">\(X_2 = φ(X_1 A + b)\)</span></li>
+<li><span class="math inline">\(X_3 = X_2 C + d\)</span></li>
+<li><span class="math inline">\(l = ||X_3 - y||^2\)</span></li>
+</ul>
+<p>In terms of notations,</p>
+<ul>
+<li>The data <span class="math inline">\(X_1\)</span> is an n by <span
+class="math inline">\(d_1\)</span> matrix, <span
+class="math inline">\(X_2\)</span> is n×<span
+class="math inline">\(d_2\)</span>, <span
+class="math inline">\(X_3\)</span> is n×1.</li>
+<li><span class="math inline">\(φ\)</span> is applied to a matrix
+element-wise, <span class="math inline">\(b\)</span> is broadcast</li>
+<li>Greek letters are for scalars, lowercase latin for vectors,
+uppercase latin for matrices.</li>
+<li>The functions’ arguments are not spelled out. This gives us
+flexibility to consider things as constant or variables, and keep the
+notation lightweight.</li>
+</ul>
+<p>Without justification, here are a few basic rules for computing
+differentials:</p>
+<ul>
+<li><span class="math inline">\(d(XY) = dXy + XdY\)</span></li>
+<li><span class="math inline">\(d(X+Y) = dX + dY\)</span></li>
+<li>If <span class="math inline">\(φ(X)\)</span> is applied elementwise,
+then <span class="math inline">\(dφ = φ&#39;(X) \odot dX\)</span> (and
+here <span class="math inline">\(\odot\)</span> is the Hadamard /
+elementwise product).</li>
+</ul>
+<p>We want to compute gradient updates to use gradient descent. It
+doesn’t really matter where we start. We can plug-in expressions as we
+go. Let’s first compute <span class="math inline">\(dX_2\)</span>:</p>
+<span class="math display">\[\begin{aligned}
+dX_2 &amp;= φ&#39;(X_1A+b) \odot (d(X_1A+b)) \\
+   &amp;= φ&#39;(X_1A+b) \odot d(X_1A) + db \\
+   &amp;= φ&#39;(X_1A+b) \odot (dX_1A + X_1dA + db) \\
+   &amp;= φ&#39; \odot (dX_1A + X_1dA + db) &amp;&amp; \text{Notation}\\
+\end{aligned}\]</span>
+<p>We do not try to compute the derivatives of each component of <span
+class="math inline">\(X_2\)</span> with regards to <span
+class="math inline">\(A\)</span> here! We would need to introduce
+indices, which is what we’re trying to avoid. So we just keep our
+differentials, and we will plug-them in / compose them later on, using
+the differential calculus’ version of chain-rule.</p>
+<p>Similarly, then, we get <span class="math inline">\(dX_3 = dX_2 C +
+X_2 dC + dd\)</span>.</p>
+<span class="math display">\[\begin{aligned}
+l &amp;= ||X_3 - y||^2 \\
+\end{aligned}\]</span>
+<p>Let’s write <span class="math inline">\(Z=X_3-y\)</span>, a n×1
+vector. Then <span class="math inline">\(l = ||Z||^2 = ZᵀZ\)</span>. So
+<span class="math inline">\(dl = d(ZᵀZ) = d(Zᵀ)Z + ZᵀdZ = dZᵀZ + ZᵀdZ =
+2ZᵀdZ\)</span>. Furthermore, we consider <span
+class="math inline">\(y\)</span> as fixed (targets) so <span
+class="math inline">\(dZ=dX_3\)</span>.</p>
+<h1 id="parameter-updates">Parameter updates</h1>
+<p>M&amp;D prove “identification theorems”. They tell us how to extract
+partial derivatives from differentials.</p>
+<p>We have: <span class="math inline">\(dl = 2ZᵀdZ =
+2(X_3-y)ᵀdX_3\)</span>. From this expression, the identification theorem
+tells us that the partial derivatives of <span
+class="math inline">\(l\)</span> wrt <span
+class="math inline">\(X_3\)</span> is <span
+class="math inline">\(2(X_3-y)ᵀ\)</span>. It is quite easy to remember:
+algebraically, “divide” by <span class="math inline">\(dX_3\)</span> on
+both sides, to get the partial derivative notation… Don’t do this
+mindlessly! You don’t want tensors higher order than 2, otherwise you
+need to use more operators like vec.</p>
+<p>If <span class="math inline">\(X_3\)</span> were a (free) parameter,
+this would tell us how to update it. Here, though, it is a function of
+<span class="math inline">\(X_2\)</span> and <span
+class="math inline">\(C\)</span>. We can consider <span
+class="math inline">\(X_2\)</span> fixed and compute the partial
+derivatives of <span class="math inline">\(l\)</span> wrt <span
+class="math inline">\(C\)</span>. Thus, setting <span
+class="math inline">\(dX_2 = 0\)</span>, we get <span
+class="math inline">\(dX_3 = dX_2C + X_2 dC = X_2 dC\)</span>. Thus
+<span class="math inline">\(dl = 2(X_3 - y)ᵀX_2 dC\)</span>. Again we
+can identify <span class="math inline">\(\frac{\partial l}{\partial C} =
+2(X_3-y)ᵀX_2\)</span>.</p>
+<p>Now, to backpropagate further in the MLP, we consider <span
+class="math inline">\(C\)</span> and <span
+class="math inline">\(d\)</span> as fixed, that is, <span
+class="math inline">\(dX_3 = dX_2 C\)</span>. We had <span
+class="math inline">\(dX_2 = φ&#39; \odot (dX_1A + X_1dA + db)\)</span>.
+We want to compute the partial derivative of <span
+class="math inline">\(l\)</span> wrt <span
+class="math inline">\(A\)</span>. Clearly, <span
+class="math inline">\(A\)</span> is never a function of <span
+class="math inline">\(X_1\)</span> and <span
+class="math inline">\(b\)</span> so <span class="math inline">\(dX_1 =
+0\)</span> and <span class="math inline">\(db = 0\)</span> for the
+purpose of that computation. So <span class="math inline">\(dX_2 =
+φ&#39; \odot (X_1dA)\)</span>.</p>
+<p>Substituting into <span class="math inline">\(dl\)</span>, we
+have</p>
+<span class="math display">\[\begin{aligned}
+dl &amp;= 2(X_3 - y)ᵀ dX_2 C \\
+   &amp;= 2(X_3 - y)ᵀ (φ&#39; \odot (X_1dA)) C \\
+\end{aligned}\]</span>
+<p>At this point we need to use the trace and its nice properties to
+extract the <span class="math inline">\(dA\)</span> term off the
+Hadamard’s claws. Note that for any vector <span
+class="math inline">\(x\)</span>, <span class="math inline">\(xᵀx =
+\sum_i x_i^2 = tr(xᵀx)\)</span>. But it turns out <span
+class="math inline">\((X_3-y)\)</span> and <span
+class="math inline">\((φ&#39; \odot (X_1dA)) C\)</span> are both vectors
+of size <span class="math inline">\(n×1\)</span>.</p>
+<span class="math display">\[\begin{aligned}
+dl &amp;= 2(X_3 - y)ᵀ (φ&#39; \odot (X_1dA)) C \\
+    &amp;= tr(2(X_3 - y)ᵀ (φ&#39; \odot (X_1dA))C) \\
+\end{aligned}\]</span>
+<p>Then we can use the fact that <span class="math inline">\(tr(AB) =
+tr(BA)\)</span> when <span class="math inline">\(A\)</span> and <span
+class="math inline">\(Bᵀ\)</span> have the same dimensions.</p>
+<span class="math display">\[\begin{aligned}
+dl  &amp;= tr(2(X_3 - y)ᵀ (φ&#39; \odot (X_1dA))C) \\
+    &amp;= tr(2C(X_3 - y)ᵀ (φ&#39; \odot (X_1dA))) \\
+\end{aligned}\]</span>
+<p>But we haven’t yet solved the problem of <span
+class="math inline">\(dA\)</span> being inside the Hadamard product.</p>
+<p>Look at these matrices:</p>
+<ul>
+<li><span class="math inline">\(Uᵀ=2C(X_3-y)ᵀ\)</span></li>
+<li><span class="math inline">\(V=φ&#39;\)</span></li>
+<li><span class="math inline">\(W = X_1 dA\)</span></li>
+</ul>
+<p>What do they have in common? They all have the same dimension, <span
+class="math inline">\(n × d_2\)</span>. Let’s try to simplify our
+expression by going back to the definitions:</p>
+<span class="math display">\[\begin{aligned}
+tr(Uᵀ(V\odot W)) &amp;= \sum_i (Uᵀ(V\odot W))_{ii} \\
+                &amp;= \sum_i \sum_k (Uᵀ)_{ik} (V\odot W)_{ki} \\
+                &amp;= \sum_i \sum_k (U)_{ki} (V)_{ki} (W)_{ki} \\
+                &amp;= \sum_i \sum_k (V)_{ki} (U)_{ki} (W)_{ki} \\
+                &amp;= \sum_i \sum_k (W)_{ki} (U)_{ki} (V)_{ki} \\
+                &amp;= \ldots \\
+\end{aligned}\]</span>
+<p>So we can permute those matrices however we want!</p>
+<p>We want to put <span class="math inline">\(dA\)</span> (which is in
+<span class="math inline">\(W\)</span>) at the end of the trace to
+identify the partial derivatives. So, we write</p>
+<span class="math display">\[\begin{aligned}
+dl &amp;= tr(Uᵀ(V \odot W)) \\
+   &amp;= tr(Wᵀ(V \odot U)) \\
+   &amp;= tr((V \odot U)ᵀW) &amp;&amp; \text{$tr(AᵀB) = tr(BᵀA)$} \\
+   &amp;= tr((Vᵀ \odot Uᵀ)W) \\
+   &amp;= tr(2 φ&#39;ᵀ \odot (C(X_3-y)ᵀ) X_1 dA)) \\
+\end{aligned}\]</span>
+<p>And by identifying, we get <span class="math inline">\(\frac{\partial
+l}{\partial A} = 2φ&#39;ᵀ \odot (C(X_3-y)ᵀ) X_1\)</span> which has the
+correct dimension, <span class="math inline">\(d_2×d_1\)</span>.</p>
+</body>
+</html>

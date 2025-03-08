@@ -6,6 +6,13 @@ body {
 	padding: 1em 1em;*/
 }
 
+img{
+    width: auto;
+    max-width: 100%;
+    margin: auto;
+    display: block;
+}
+
 p.author::before{
 	content: "Author: ";
 }
@@ -29,9 +36,8 @@ blockquote {
 }
 
 .math {
-	font-family: "DejaVu Math TeX Gyre";
-	/* font-family: "Latin Modern Math"; ugly*/
-	/* font-family: inherit; */
+    /* idk why I had set up the font-family manually... */
+	/* font-family: "DejaVu Math TeX Gyre"; */
 	font-size: 1rem;
 }
 
